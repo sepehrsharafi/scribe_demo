@@ -141,6 +141,12 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Reserve the scrollbar's track on every page, so a short page and a long
+     one set their content to exactly the same width. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground font-sans text-sm antialiased;
   }
@@ -150,5 +156,36 @@
   h3,
   h4 {
     @apply font-heading;
+  }
+}
+
+/* Demo-only Farsi. Outside any layer so it outranks the font classes next/font
+   puts on <html>. One face does all three jobs, and letter-spacing is switched
+   off because it breaks the joins of Persian script. */
+html[lang="fa"] {
+  --font-sans: var(--font-farsi);
+  --font-heading: var(--font-farsi);
+  --font-geist-mono: var(--font-farsi);
+}
+
+html[lang="fa"] * {
+  letter-spacing: normal !important;
+}
+
+/* Persian letters sit much smaller than Latin ones at the same size, so the
+   smallest step (labels, eyebrows, index numerals) goes up a little in Farsi. */
+html[lang="fa"] .text-2xs {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* The sign-in screen's live signal. */
+@keyframes scribe-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }

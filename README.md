@@ -1,4 +1,4 @@
-# Cima
+# scribe_demo
 
 A doctor-facing AI medical scribe demo built with Next.js 16, React 19, Tailwind CSS 4, Motion, and Lucide icons.
 
