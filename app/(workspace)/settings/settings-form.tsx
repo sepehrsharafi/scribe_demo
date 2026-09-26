@@ -6,7 +6,9 @@ import {
   RiShieldCheckLine,
   RiUserLine,
 } from "@remixicon/react";
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { toast } from "sonner";
+import { resetWorkspace } from "@/lib/actions/workspace";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,6 +133,40 @@ function Pane({
   );
 }
 
+/**
+ * Recordings, added patients and approvals made in this browser are kept so
+ * every page agrees on them. This puts the demo back as it shipped, ready for
+ * the next walkthrough.
+ */
+function ResetDemo() {
+  const { t } = useI18n();
+  const [resetting, startReset] = useTransition();
+
+  return (
+    <Field orientation="horizontal" className="rounded-2xl border p-4">
+      <FieldContent>
+        <FieldTitle>{t("Changes made in this browser")}</FieldTitle>
+        <FieldDescription>
+          {t("New recordings, added patients and approvals. Resetting brings back the demo as it started.")}
+        </FieldDescription>
+      </FieldContent>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={resetting}
+        onClick={() =>
+          startReset(async () => {
+            await resetWorkspace();
+            toast.success(t("Demo reset"));
+          })
+        }
+      >
+        {t("Reset demo")}
+      </Button>
+    </Field>
+  );
+}
+
 export function SettingsForm() {
   const { t, demo } = useI18n();
   const { doctor } = demo;
@@ -164,7 +200,7 @@ export function SettingsForm() {
           status={status}
           onSave={save}
           title="Profile"
-          description="The identity that appears on notes signed in this demo workspace."
+          description="The identity that appears on notes approved in this demo workspace."
         >
           <div className="grid gap-5 sm:grid-cols-2">
             {[
@@ -337,6 +373,7 @@ export function SettingsForm() {
                 {t("Clear demo data")}
               </Button>
             </Field>
+            <ResetDemo />
           </div>
         </Pane>
       </TabsContent>

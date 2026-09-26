@@ -13,18 +13,18 @@ export function VersionList({ versions }: { versions: NoteVersion[] }) {
           <div key={version.id} className="flex items-start gap-3">
             <span
               className={cn(
-                "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full",
-                version.kind === "signature"
+                "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
+                version.kind === "approval"
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground",
               )}
             >
               {version.kind === "ai" ? (
-                <RiSparklingLine className="size-2.5" />
-              ) : version.kind === "signature" ? (
-                <RiLockLine className="size-2.5" />
+                <RiSparklingLine className="size-3" />
+              ) : version.kind === "approval" ? (
+                <RiLockLine className="size-3" />
               ) : (
-                <RiQuillPenLine className="size-2.5" />
+                <RiQuillPenLine className="size-3" />
               )}
             </span>
             <div className="min-w-0">

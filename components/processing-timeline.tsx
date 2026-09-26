@@ -31,11 +31,11 @@ const pipeline = [
   {
     id: "draft-ready",
     label: "Ready for review",
-    detail: "Waiting on the doctor to read, correct, and sign.",
+    detail: "Waiting on the doctor to read, correct, and approve.",
   },
   {
-    id: "signed",
-    label: "Signed and locked",
+    id: "approved",
+    label: "Approved and locked",
     detail: "The clinical record. Later changes become addenda.",
   },
 ];
@@ -46,7 +46,7 @@ const reached: Record<VisitStatus, number> = {
   transcribing: 2,
   drafting: 3,
   "draft-ready": 4,
-  signed: 5,
+  approved: 5,
   failed: 1,
 };
 
@@ -56,7 +56,7 @@ function Mark({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
     <span
       className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-full border font-mono text-2xs tabular-nums",
+        "flex size-6 shrink-0 items-center justify-center rounded-full border font-mono text-2xs tabular-nums",
         tone === "done" && "border-primary/30 bg-primary/10 text-primary",
         tone === "live" && "border-warning bg-warning text-background",
         tone === "failed" && "border-destructive bg-destructive text-background",
@@ -84,9 +84,9 @@ export function ProcessingTimeline({
 }) {
   const { t, demo } = useI18n();
   const failed = status === "failed";
-  const signed = status === "signed";
-  const doneCount = failed ? 1 : signed ? pipeline.length : reached[status];
-  const liveIndex = signed ? -1 : failed ? 1 : reached[status];
+  const approved = status === "approved";
+  const doneCount = failed ? 1 : approved ? pipeline.length : reached[status];
+  const liveIndex = approved ? -1 : failed ? 1 : reached[status];
 
   return (
     <ol className="overflow-hidden rounded-2xl border">
@@ -110,7 +110,7 @@ export function ProcessingTimeline({
               tone === "done" && "bg-primary/4",
               tone === "live" && "bg-warning/5",
               tone === "failed" && "bg-destructive/5",
-              tone === "waiting" && "text-muted-foreground/70",
+              tone === "waiting" && "text-muted-foreground",
             )}
           >
             <span className="flex items-center gap-3 sm:gap-4">
@@ -119,11 +119,11 @@ export function ProcessingTimeline({
               </span>
               <Mark tone={tone}>
                 {tone === "done" ? (
-                  <RiCheckLine className="size-3" />
+                  <RiCheckLine className="size-3.5" />
                 ) : tone === "failed" ? (
-                  <RiErrorWarningLine className="size-3" />
+                  <RiErrorWarningLine className="size-3.5" />
                 ) : tone === "live" ? (
-                  <Spinner className="size-3" />
+                  <Spinner className="size-3.5" />
                 ) : null}
               </Mark>
             </span>

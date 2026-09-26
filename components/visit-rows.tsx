@@ -14,11 +14,12 @@ import {
 import { PatientAvatar } from "@/components/patient-avatar";
 import { StatusBadge } from "@/components/status-badge";
 
-/* Index · avatar · patient · consultation · status · when. One template for the
-   head row and every body row, so a fixed track owns the status column instead
-   of the longest status word pushing the others around. */
+/* Index · avatar · patient · consultation · status · time. One template for
+   the head row and every body row, so a fixed track owns the status column
+   instead of the longest status word pushing the others around. On a phone a
+   row is two lines: patient over consultation, status over time. */
 const columns =
-  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_minmax(0,1.2fr)_9.5rem_5.5rem_1rem]";
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_minmax(0,1.2fr)_9.5rem_4rem_1rem]";
 
 /** Visits gathered by the day they happened, latest first within each day. */
 function byDay(visits: Visit[]) {
@@ -43,18 +44,14 @@ function dayLabel(visit: Visit) {
  */
 export function VisitRows({
   visits,
-  when = "date",
   groupByDay = false,
 }: {
   visits: Visit[];
-  /** The quiet line under the start time: which day it was, or how long it ran. */
-  when?: "date" | "duration";
   /** Head each day with its date. The rows then no longer need to say it. */
   groupByDay?: boolean;
 }) {
   const { t, demo } = useI18n();
   const days = groupByDay ? byDay(visits) : [visits];
-  const underTime = groupByDay ? "duration" : when;
   const order = days.flat();
 
   return (
@@ -64,7 +61,7 @@ export function VisitRows({
         <span className="sm:col-span-2">{t("Patient")}</span>
         <span className="hidden sm:block">{t("Consultation")}</span>
         <span className="hidden sm:block">{t("Status")}</span>
-        <span className="hidden text-end sm:block">{t("When")}</span>
+        <span className="hidden text-end sm:block">{t("Time")}</span>
         <span className="hidden sm:block" />
       </RecordHead>
 
@@ -89,7 +86,7 @@ export function VisitRows({
                     <>
                       {patient?.name ?? t("Unknown")}
                       {patient ? (
-                        <span className="ms-2 font-mono text-xs font-normal text-muted-foreground tabular-nums">
+                        <span className="ms-2 hidden font-mono text-xs font-normal text-muted-foreground tabular-nums sm:inline">
                           {t("{age} yrs", { age: patient.age })}
                         </span>
                       ) : null}
@@ -97,17 +94,26 @@ export function VisitRows({
                   }
                 />
                 <Cell className="hidden sm:grid" primary={visit.reason} />
-                <span className="sm:justify-self-start">
+                <span className="justify-self-end sm:justify-self-start">
                   <StatusBadge status={visit.status} />
                 </span>
-                <Cell
-                  className="hidden sm:grid"
-                  align="end"
-                  mono
-                  primary={visit.time}
-                  secondary={underTime === "date" ? visit.date : visit.duration}
-                />
+                <span className="hidden text-end font-mono font-medium tabular-nums sm:block">
+                  {visit.time}
+                </span>
                 <RowChevron />
+                {/* A phone's second line, across the whole row: the age and the
+                    consultation, whose columns are hidden there, then the time. */}
+                <span className="col-span-2 mt-1 flex min-w-0 items-baseline gap-3 text-xs text-muted-foreground sm:hidden">
+                  <span className="min-w-0 flex-1 truncate">
+                    {patient ? (
+                      <span className="font-mono tabular-nums">
+                        {t("{age} yrs", { age: patient.age })} ·{" "}
+                      </span>
+                    ) : null}
+                    {visit.reason}
+                  </span>
+                  <span className="shrink-0 font-mono tabular-nums">{visit.time}</span>
+                </span>
               </RecordRow>
             );
           })}

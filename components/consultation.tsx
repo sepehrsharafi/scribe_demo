@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import {
+  RiCheckDoubleLine,
   RiErrorWarningLine,
   RiFileTextLine,
   RiHistoryLine,
-  RiQuillPenLine,
   RiRefreshLine,
   RiUserLine,
   RiVoiceprintLine,
 } from "@remixicon/react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import type {
-  NoteSection,
+  Note as NoteRecord,
   NoteVersion,
   Patient,
   TranscriptLine,
   VisitStatus,
 } from "@/lib/demo-data";
+import { approveNote, reopenNote } from "@/lib/actions/workspace";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -30,9 +32,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eyebrow, Facts, Page } from "@/components/page-layout";
 import { PatientAvatar } from "@/components/patient-avatar";
+import { PatientContext } from "@/components/patient-context";
 import { StatusBadge } from "@/components/status-badge";
-import { Note, NoteOutline, NoteToolbar } from "@/components/note";
-import { SignDialog } from "@/components/note-sign-dialog";
+import { jumpTo, Note, NoteOutline, NoteToolbar } from "@/components/note";
 import { VersionList } from "@/components/note-versions";
 import { ProcessingTimeline } from "@/components/processing-timeline";
 import { TranscriptView } from "@/components/transcript";
@@ -40,21 +42,27 @@ import { useNote } from "@/components/use-note";
 import { useI18n } from "@/components/i18n-provider";
 
 export type ConsultationData = {
+  /** Absent for a consultation that has not been filed yet: approving it is then local only. */
+  visitId?: string;
   patient: Patient;
   reason: string;
   dateLong: string;
-  time: string;
   /** Recording length. Absent on a consultation written by hand. */
   duration?: string;
   status: VisitStatus;
   failureReason?: string;
-  note?: NoteSection[];
+  note?: NoteRecord;
   transcript: TranscriptLine[];
   versions: NoteVersion[];
-  signedAt?: string;
+  approvedAt?: string;
   /** Typed straight into the note: no audio, no transcript, no pipeline. */
   manual?: boolean;
 };
+
+const emptyNote: NoteRecord = { sections: [], medications: [] };
+
+const clock = () =>
+  new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 /** Retrying is nothing but a spinner on this button, so it owns that state. */
 function RetryButton({ size }: { size?: "sm" }) {
@@ -84,26 +92,44 @@ function RetryButton({ size }: { size?: "sm" }) {
 /**
  * One consultation, one page. The note, the transcript it came from and the
  * trail of how it got here are views of the same record, not places to
- * navigate between. Signing it is the page's primary action.
+ * navigate between. Approving it is the page's primary action, and it is one
+ * tap — the only thing that can hold it back is a medication nobody has
+ * confirmed.
  */
 export function Consultation({ data }: { data: ConsultationData }) {
   const { t } = useI18n();
-  const hasNote = Boolean(data.note?.length);
+  const [, startTransition] = useTransition();
+  const hasNote = Boolean(data.note);
   const hasTranscript = !data.manual && data.transcript.length > 0;
   const failed = data.status === "failed";
 
   const [tab, setTab] = useState(
     hasNote ? "note" : hasTranscript ? "transcript" : "activity",
   );
-  const [signing, setSigning] = useState(false);
 
   const note = useNote({
-    note: data.note ?? [],
+    note: data.note ?? emptyNote,
     versions: data.versions,
-    signed: data.status === "signed",
+    approved: data.status === "approved",
   });
 
-  const status: VisitStatus = note.signed ? "signed" : data.status;
+  const status: VisitStatus = note.approved ? "approved" : data.status;
+  const { visitId } = data;
+
+  function approve() {
+    const time = clock();
+    note.approve();
+    if (visitId) startTransition(() => approveNote(visitId, time));
+    toast.success(t("Note approved and locked"), {
+      action: {
+        label: t("Undo"),
+        onClick: () => {
+          note.reopen();
+          if (visitId) startTransition(() => reopenNote(visitId));
+        },
+      },
+    });
+  }
 
   return (
     <Page className="space-y-8">
@@ -120,7 +146,7 @@ export function Consultation({ data }: { data: ConsultationData }) {
                 href={`/patients/${data.patient.id}`}
                 className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4 hover:text-primary"
               >
-                <RiUserLine className="size-3.5" />
+                <RiUserLine className="size-4" />
                 {data.patient.name}
               </Link>
               <span className="font-mono text-xs text-muted-foreground tabular-nums">
@@ -131,14 +157,32 @@ export function Consultation({ data }: { data: ConsultationData }) {
         </div>
 
         {/* This is a consultation that already happened. The only thing left to
-            do to it is sign it. */}
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {failed ? <RetryButton /> : null}
-          {hasNote && !note.signed ? (
-            <Button onClick={() => setSigning(true)}>
-              <RiQuillPenLine data-icon="inline-start" />
-              {t("Sign note")}
-            </Button>
+            do to it is approve it. */}
+        <div className="flex shrink-0 flex-col gap-2 lg:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            {failed ? <RetryButton /> : null}
+            {hasNote && !note.approved ? (
+              <Button size="lg" onClick={approve} disabled={note.unconfirmed > 0}>
+                <RiCheckDoubleLine data-icon="inline-start" />
+                {t("Approve note")}
+              </Button>
+            ) : null}
+          </div>
+          {hasNote && !note.approved && note.unconfirmed > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTab("note");
+                note.setActive("medications");
+                window.setTimeout(() => jumpTo("medications"));
+              }}
+              className="inline-flex items-center gap-1.5 text-start text-xs font-medium text-warning underline-offset-4 hover:underline"
+            >
+              <RiErrorWarningLine className="size-4 shrink-0" />
+              {note.unconfirmed === 1
+                ? t("Confirm 1 medication to approve")
+                : t("Confirm {count} medications to approve", { count: note.unconfirmed })}
+            </button>
           ) : null}
         </div>
       </header>
@@ -147,14 +191,16 @@ export function Consultation({ data }: { data: ConsultationData }) {
         items={[
           { label: t("Status"), value: <StatusBadge status={status} /> },
           { label: t("Date"), value: data.dateLong },
-          { label: t("Started"), value: data.time },
           data.manual
             ? { label: t("Source"), value: t("Written by hand") }
             : { label: t("Length"), value: data.duration ?? "—" },
         ]}
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
+      {/* Above the tabs at every width: beside them it squeezes the note. */}
+      <PatientContext patientId={data.patient.id} visitId={visitId} />
+
+      <Tabs value={tab} onValueChange={setTab} className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
           <TabsList variant="line">
             <TabsTrigger value="note" disabled={!hasNote}>
@@ -178,16 +224,16 @@ export function Consultation({ data }: { data: ConsultationData }) {
 
         <TabsContent value="note" className="pt-2">
           {hasNote ? (
-            <div className="grid gap-8 lg:grid-cols-[11rem_minmax(0,1fr)]">
+            <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
               <aside className="hidden lg:block">
-                <div className="sticky top-32">
+                <div className="sticky top-20">
                   <Eyebrow>{t("Sections")}</Eyebrow>
                   <div className="mt-2">
                     <NoteOutline note={note} />
                   </div>
                 </div>
               </aside>
-              <Note note={note} signedAt={data.signedAt} manual={data.manual} />
+              <Note note={note} approvedAt={data.approvedAt} manual={data.manual} />
             </div>
           ) : (
             <Empty className="border">
@@ -206,10 +252,7 @@ export function Consultation({ data }: { data: ConsultationData }) {
 
         {!data.manual ? (
           <TabsContent value="transcript" className="pt-4">
-            <TranscriptView
-              transcript={data.transcript}
-              duration={data.duration ?? "—"}
-            />
+            <TranscriptView transcript={data.transcript} duration={data.duration ?? "—"} />
           </TabsContent>
         ) : null}
 
@@ -245,9 +288,9 @@ export function Consultation({ data }: { data: ConsultationData }) {
                     </p>
                   )}
                 </div>
-                {note.signed && data.signedAt ? (
+                {note.approved && data.approvedAt ? (
                   <p className="mt-3 border-t pt-3 font-mono text-2xs text-muted-foreground">
-                    {t("Signed {when}", { when: data.signedAt })}
+                    {t("Approved {when}", { when: data.approvedAt })}
                   </p>
                 ) : null}
               </div>
@@ -276,15 +319,6 @@ export function Consultation({ data }: { data: ConsultationData }) {
           </div>
         </TabsContent>
       </Tabs>
-
-      <SignDialog
-        open={signing}
-        onOpenChange={setSigning}
-        sections={note.note.length}
-        versions={note.versions.length}
-        unsaved={note.unsaved}
-        onSign={note.sign}
-      />
     </Page>
   );
 }

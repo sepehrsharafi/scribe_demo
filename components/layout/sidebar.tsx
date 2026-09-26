@@ -38,7 +38,7 @@ function BrandMark() {
 export async function AppSidebar() {
   const { t, dir, demo } = await getI18n();
   const { doctor } = demo;
-  const waiting = demo.actionableVisits.length;
+  const toReview = demo.toReview.length;
 
   return (
     // In Farsi the sidebar sits on the reading side, which is the right.
@@ -66,7 +66,7 @@ export async function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <Nav waiting={waiting} />
+        <Nav toReview={toReview} />
 
         <div className="mx-2 mb-2 rounded-xl border border-dashed p-3 group-data-[collapsible=icon]:hidden">
           <p className="font-mono text-2xs tracking-[0.12em] uppercase">{t("Demo workspace")}</p>

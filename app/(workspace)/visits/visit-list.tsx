@@ -55,13 +55,15 @@ export function VisitList({ initialFilter }: { initialFilter: VisitFilter }) {
           aria-label={t("Filter visits")}
           variant="outline"
           spacing={0}
+          // On a phone the four filters share the width instead of running past it.
+          className="w-full sm:w-auto"
           value={[filter]}
           onValueChange={(next) => {
             if (next[0]) setFilter(next[0] as VisitFilter);
           }}
         >
           {visitFilters.map((option) => (
-            <ToggleGroupItem key={option.id} value={option.id} className="px-3">
+            <ToggleGroupItem key={option.id} value={option.id} className="flex-1 px-2 sm:flex-none sm:px-3">
               {option.label}
             </ToggleGroupItem>
           ))}

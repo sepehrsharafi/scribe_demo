@@ -81,10 +81,12 @@ const suggestions = [
  */
 export function Revise({
   section,
+  label,
   onClose,
   onAccept,
 }: {
   section: NoteSection;
+  label: string;
   onClose: () => void;
   onAccept: (body: string) => void;
 }) {
@@ -106,8 +108,8 @@ export function Revise({
     <Card size="sm" className="mt-4 ring-primary/20">
       <CardHeader className="flex flex-row items-center justify-between border-b">
         <CardTitle className="flex items-center gap-2 font-mono text-2xs tracking-[0.12em] uppercase">
-          <RiSparklingLine className="size-3.5" />
-          {t("Revise · {section}", { section: section.label })}
+          <RiSparklingLine className="size-4" />
+          {t("Revise · {section}", { section: label })}
         </CardTitle>
         <Button
           variant="ghost"
@@ -127,7 +129,7 @@ export function Revise({
               value={instruction}
               onChange={(event) => setInstruction(event.target.value)}
               placeholder={t("Tell Scribe what to change in {section}…", {
-                section: section.label.toLowerCase(),
+                section: label.toLowerCase(),
               })}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) generate();
@@ -156,7 +158,7 @@ export function Revise({
               </Button>
             </div>
             <p className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
-              <RiShieldCheckLine className="mt-0.5 size-3.5 shrink-0" />
+              <RiShieldCheckLine className="mt-0.5 size-4 shrink-0" />
               {t("Only this section can change, and only using what was said. Anything the transcript does not support stays a visible gap.")}
             </p>
           </>

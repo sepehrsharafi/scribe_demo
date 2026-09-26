@@ -10,16 +10,16 @@ const tone: Record<VisitStatus, string> = {
   transcribing: "bg-secondary text-secondary-foreground",
   drafting: "bg-secondary text-secondary-foreground",
   "draft-ready": "bg-warning/10 text-warning dark:bg-warning/15",
-  signed: "bg-primary/10 text-primary dark:bg-primary/20",
+  approved: "bg-primary/10 text-primary dark:bg-primary/20",
   failed: "bg-destructive/10 text-destructive dark:bg-destructive/20",
 };
 
 const dot: Record<VisitStatus, string> = {
-  uploading: "bg-muted-foreground",
+  uploading: "bg-muted-foreground animate-pulse",
   transcribing: "bg-muted-foreground animate-pulse",
   drafting: "bg-muted-foreground animate-pulse",
   "draft-ready": "bg-warning",
-  signed: "bg-primary",
+  approved: "bg-primary",
   failed: "bg-destructive",
 };
 
@@ -34,12 +34,12 @@ export function StatusBadge({
   const meta = useI18n().demo.statusMeta[status];
   return (
     <Badge
-      className={cn("gap-1.5 px-2 font-medium whitespace-nowrap", tone[status], className)}
+      className={cn("gap-1.5 px-2.5 font-medium whitespace-nowrap", tone[status], className)}
       title={meta.description}
     >
       <span
         aria-hidden="true"
-        className={cn("size-1.5 shrink-0 rounded-full", dot[status])}
+        className={cn("size-2 shrink-0 rounded-full", dot[status])}
       />
       {meta.label}
     </Badge>

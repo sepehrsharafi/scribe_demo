@@ -11,36 +11,41 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.508 0.118 165.612);
-  --primary-foreground: oklch(0.979 0.021 166.113);
+  /* One violet family on hue 292.8, built from the brand lavender #e8e4fe
+     (the accent). Primary is the same hue pushed deep enough for white text
+     at 6.6:1; the charts step through it from light to dark. */
+  --primary: oklch(0.5 0.2 292.8);
+  --primary-foreground: oklch(0.985 0.01 292.8);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Darker than the preset's 0.556: secondary text is read by specialists
+     with reduced eyesight, so it clears 6:1 on white instead of scraping AA. */
+  --muted-foreground: oklch(0.47 0 0);
+  --accent: oklch(0.93 0.035 292.8);
+  --accent-foreground: oklch(0.38 0.14 292.8);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.871 0.15 154.449);
-  --chart-2: oklch(0.723 0.219 149.579);
-  --chart-3: oklch(0.627 0.194 149.214);
-  --chart-4: oklch(0.527 0.154 150.069);
-  --chart-5: oklch(0.448 0.119 151.328);
+  --ring: oklch(0.72 0.12 292.8);
+  --chart-1: oklch(0.87 0.06 292.8);
+  --chart-2: oklch(0.75 0.12 292.8);
+  --chart-3: oklch(0.63 0.18 292.8);
+  --chart-4: oklch(0.52 0.2 292.8);
+  --chart-5: oklch(0.42 0.17 292.8);
   --radius: 0.45rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.596 0.145 163.225);
-  --sidebar-primary-foreground: oklch(0.979 0.021 166.113);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.5 0.2 292.8);
+  --sidebar-primary-foreground: oklch(0.985 0.01 292.8);
+  --sidebar-accent: oklch(0.93 0.035 292.8);
+  --sidebar-accent-foreground: oklch(0.38 0.14 292.8);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: oklch(0.72 0.12 292.8);
 
   /* Clinical status hue. Not part of the shadcn preset - added so that
      "waiting on the doctor" has its own voice next to primary/destructive. */
-  --warning: oklch(0.55 0.11 76);
+  --warning: oklch(0.5 0.11 76);
   --warning-foreground: oklch(0.985 0 0);
   --warning-muted: oklch(0.962 0.03 86);
 }
@@ -52,31 +57,31 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.432 0.095 166.913);
-  --primary-foreground: oklch(0.979 0.021 166.113);
+  --primary: oklch(0.72 0.15 292.8);
+  --primary-foreground: oklch(0.22 0.07 292.8);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --muted-foreground: oklch(0.76 0 0);
+  --accent: oklch(0.32 0.07 292.8);
+  --accent-foreground: oklch(0.93 0.035 292.8);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.871 0.15 154.449);
-  --chart-2: oklch(0.723 0.219 149.579);
-  --chart-3: oklch(0.627 0.194 149.214);
-  --chart-4: oklch(0.527 0.154 150.069);
-  --chart-5: oklch(0.448 0.119 151.328);
+  --ring: oklch(0.56 0.14 292.8);
+  --chart-1: oklch(0.87 0.06 292.8);
+  --chart-2: oklch(0.75 0.12 292.8);
+  --chart-3: oklch(0.63 0.18 292.8);
+  --chart-4: oklch(0.52 0.2 292.8);
+  --chart-5: oklch(0.42 0.17 292.8);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.696 0.17 162.48);
-  --sidebar-primary-foreground: oklch(0.262 0.051 172.552);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.72 0.15 292.8);
+  --sidebar-primary-foreground: oklch(0.22 0.07 292.8);
+  --sidebar-accent: oklch(0.32 0.07 292.8);
+  --sidebar-accent-foreground: oklch(0.93 0.035 292.8);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.56 0.14 292.8);
 
   --warning: oklch(0.78 0.13 82);
   --warning-foreground: oklch(0.21 0.03 82);
@@ -123,9 +128,22 @@
   --font-heading: var(--font-heading);
   --font-mono: var(--font-geist-mono);
 
-  /* One step below text-xs, for the mono eyebrows and index numerals. */
-  --text-2xs: 0.6875rem;
-  --text-2xs--line-height: 1.2;
+  /*
+   * The small end of the scale is set a step larger than Tailwind's, because
+   * the people reading it are specialists, many with reduced eyesight. The
+   * names keep their order; the sizes under them moved:
+   *   2xs  11 -> 13px  mono uppercase labels, index numerals
+   *   xs   12 -> 14px  secondary and helper text, captions, status pills
+   *   sm   14 -> 16px  body text, table text, controls
+   * base (16px) and everything above it — headings, display figures — are
+   * untouched, so the hierarchy is carried by weight and face down there.
+   */
+  --text-2xs: 0.8125rem;
+  --text-2xs--line-height: 1.35;
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -175,11 +193,17 @@ html[lang="fa"] * {
 /* Persian letters sit much smaller than Latin ones at the same size, so the
    smallest step (labels, eyebrows, index numerals) goes up a little in Farsi. */
 html[lang="fa"] .text-2xs {
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
-/* The sign-in screen's live signal. */
+/* While a recording is minimised to the corner, toasts rise above its card
+   instead of covering it. Sonner sets its offset inline, hence !important. */
+body:has([data-recording-dock][data-open]) [data-sonner-toaster][data-y-position="bottom"] {
+  bottom: calc(var(--offset-bottom, 1.5rem) + 5.5rem) !important;
+}
+
+/* The live signal: the sign-in screen and the minimised recording. */
 @keyframes scribe-wave {
   0%,
   100% {

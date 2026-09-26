@@ -30,7 +30,7 @@ const vazirmatn = localFont({
 
 export const metadata: Metadata = {
   title: "Scribe",
-  description: "A doctor-first AI medical scribe for capturing, reviewing, and signing consultation notes.",
+  description: "A doctor-first AI medical scribe for capturing, reviewing, and approving consultation notes.",
 };
 
 /**
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
  * sign-in screen can stand on its own.
  */
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { locale, dir } = await getI18n();
+  const { locale, dir, changes, now } = await getI18n();
 
   return (
     <html
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <I18nProvider locale={locale}>
+          <I18nProvider locale={locale} changes={changes} now={now}>
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
           </I18nProvider>

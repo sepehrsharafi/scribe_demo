@@ -3,7 +3,7 @@ import { farsiStrings } from "@/lib/i18n/farsi-strings";
 
 /**
  * Interface copy is written in English in the markup, and the English text is
- * its own key: `t("Sign note")`. `{name}` placeholders are filled from `values`.
+ * its own key: `t("Approve note")`. `{name}` placeholders are filled from `values`.
  */
 export type Translate = (text: string, values?: Record<string, string | number>) => string;
 

@@ -84,7 +84,7 @@ function NavItem({
   );
 }
 
-export function Nav({ waiting }: { waiting: number }) {
+export function Nav({ toReview }: { toReview: number }) {
   const section = useSection();
   const { t } = useI18n();
 
@@ -98,14 +98,16 @@ export function Nav({ waiting }: { waiting: number }) {
           <SidebarMenu>
             {destinations.map((item) => (
               <NavItem key={item.label} {...item} active={section.label === item.label}>
-                {/* The only number in the sidebar is work waiting on the doctor,
-                    so it wears the amber that means "still owed" everywhere else. */}
-                {item.label === "Visits" && waiting ? (
+                {/* The only number in the sidebar is notes waiting for the
+                    doctor's approval, so it wears the amber that means "still
+                    owed" everywhere else. */}
+                {item.label === "Visits" && toReview ? (
                   <Badge
-                    className="h-5 min-w-5 rounded-full bg-warning/15 px-1.5 font-mono text-xs font-semibold text-warning tabular-nums group-data-[collapsible=icon]:hidden dark:bg-warning/20"
-                    aria-label={t("{count} consultations need you", { count: waiting })}
+                    className="h-6 min-w-6 rounded-full bg-warning/15 px-2 font-mono text-xs font-semibold text-warning tabular-nums group-data-[collapsible=icon]:hidden dark:bg-warning/20"
+                    aria-label={t("{count} notes to review", { count: toReview })}
+                    title={t("{count} notes to review", { count: toReview })}
                   >
-                    {waiting}
+                    {toReview}
                   </Badge>
                 ) : null}
               </NavItem>

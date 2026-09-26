@@ -34,7 +34,7 @@ export default async function SignIn({ searchParams }: PageProps<"/login">) {
   const steps = [
     { verb: t("Listen."), copy: t("The consultation is captured in encrypted chunks as you talk.") },
     { verb: t("Draft."), copy: t("A structured note, drawn only from what was said.") },
-    { verb: t("Sign."), copy: t("You read it, correct it, and put your name to it.") },
+    { verb: t("Approve."), copy: t("You read it, correct it, and put your name to it.") },
   ];
 
   return (
@@ -46,7 +46,7 @@ export default async function SignIn({ searchParams }: PageProps<"/login">) {
             <span className="font-heading text-lg leading-none font-semibold tracking-tight">
               {t("Scribe")}
             </span>
-            <span className="font-mono text-2xs tracking-[0.14em] uppercase opacity-60">
+            <span className="font-mono text-2xs tracking-[0.14em] uppercase opacity-70">
               {t("Clinical notes")}
             </span>
           </span>
@@ -78,16 +78,16 @@ export default async function SignIn({ searchParams }: PageProps<"/login">) {
           <ol className="mt-12 grid grid-cols-3 border-t border-current/15">
             {steps.map((step, index) => (
               <li key={step.verb} className="border-e border-current/15 pe-6 pt-5 last:border-e-0 [&:not(:first-child)]:ps-6">
-                <span className="font-mono text-2xs tabular-nums opacity-50">
+                <span className="font-mono text-2xs tabular-nums opacity-70">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <p className="mt-2 text-sm leading-relaxed opacity-75">{step.copy}</p>
+                <p className="mt-2 text-sm leading-relaxed opacity-85">{step.copy}</p>
               </li>
             ))}
           </ol>
         </div>
 
-        <p className="font-mono text-2xs tracking-[0.14em] uppercase opacity-50">
+        <p className="font-mono text-2xs tracking-[0.14em] uppercase opacity-70">
           {t("Demo workspace · synthetic patients only")}
         </p>
       </section>

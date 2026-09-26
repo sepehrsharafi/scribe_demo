@@ -30,8 +30,8 @@ const topics = [
   },
   {
     icon: RiVerifiedBadgeLine,
-    title: "Signing and addenda",
-    copy: "What locking means, how versions are kept, and how to correct a signed note.",
+    title: "Approving and addenda",
+    copy: "What locking means, how versions are kept, and how to correct an approved note.",
   },
 ];
 
@@ -52,9 +52,9 @@ const faqs = [
       "No. The model may summarise and clinically rephrase, but it cannot introduce findings, values, diagnoses, or medications that are absent from the transcript. Sections that were never covered stay marked as explicit gaps.",
   },
   {
-    question: "Can a signed note be changed?",
+    question: "Can an approved note be changed?",
     answer:
-      "A signed note is read-only. Any later correction is stored as a separate addendum, so the original record and the full version chain behind it stay intact.",
+      "An approved note is read-only. Any later correction is stored as a separate addendum, so the original record and the full version chain behind it stay intact.",
   },
   {
     question: "How long does a draft take to arrive?",
@@ -71,7 +71,7 @@ export default async function Help() {
       <PageHead
         eyebrow={t("Support")}
         title={t("How can we help?")}
-        description={t("Short answers for capturing, recovering, reviewing, and signing a consultation.")}
+        description={t("Short answers for capturing, recovering, reviewing, and approving a consultation.")}
       />
 
       <div className="grid gap-4 md:grid-cols-3">

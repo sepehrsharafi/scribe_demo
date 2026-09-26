@@ -15,7 +15,7 @@ export default async function Visits({ searchParams }: PageProps<"/visits">) {
       <PageHead
         eyebrow={t("Clinical worklist")}
         title={t("Visits")}
-        description={t("Every consultation from captured audio through to a signed clinical note.")}
+        description={t("Every consultation from captured audio through to an approved clinical note.")}
         actions={
           <Button render={<Link href="/new" />}>
             <RiMicLine data-icon="inline-start" />

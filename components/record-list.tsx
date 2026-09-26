@@ -122,7 +122,7 @@ export function RowIndex({ index }: { index: number }) {
 export function RowChevron() {
   return (
     <span className="hidden justify-self-end text-muted-foreground transition-transform group-hover/row:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover/row:-translate-x-0.5 sm:block">
-      <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
         <path
           d="m9 6 6 6-6 6"
           fill="none"

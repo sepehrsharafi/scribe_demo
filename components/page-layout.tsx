@@ -85,15 +85,25 @@ export function SectionHead({
 }
 
 /**
- * The four-up ruled fact strip used at the top of a record. Values are set in
- * the mono face: dates, times and durations are data, and the body face reads
- * badly for them.
+ * The ruled fact strip used at the top of a record, three or four up. Values
+ * are set in the mono face: dates, times and durations are data, and the body
+ * face reads badly for them.
  */
 export function Facts({ items }: { items: { label: string; value: ReactNode }[] }) {
+  const odd = items.length % 2 === 1;
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border md:grid-cols-4">
-      {items.map((fact) => (
-        <div key={fact.label} className="bg-background p-4">
+    <dl
+      className={cn(
+        "grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border",
+        items.length === 3 ? "sm:grid-cols-3" : "md:grid-cols-4",
+      )}
+    >
+      {items.map((fact, index) => (
+        <div
+          key={fact.label}
+          // An odd count would leave a hole on a phone; the first fact takes the full row.
+          className={cn("bg-background p-4", odd && index === 0 && "col-span-2 sm:col-span-1")}
+        >
           <dt className="font-mono text-2xs tracking-[0.14em] text-muted-foreground uppercase">
             {fact.label}
           </dt>

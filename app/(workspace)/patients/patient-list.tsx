@@ -2,28 +2,11 @@
 
 import { RiGroupLine, RiSearchLine } from "@remixicon/react";
 import { useState } from "react";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Eyebrow } from "@/components/page-layout";
 import { PatientAvatar } from "@/components/patient-avatar";
-import {
-  Cell,
-  RecordHead,
-  RecordList,
-  RecordRow,
-  RowChevron,
-  RowIndex,
-} from "@/components/record-list";
+import { Cell, RecordHead, RecordList, RecordRow, RowChevron, RowIndex } from "@/components/record-list";
 import { useI18n } from "@/components/i18n-provider";
 
 const columns =
@@ -35,9 +18,7 @@ export function PatientList() {
   const [query, setQuery] = useState("");
 
   const search = query.trim().toLowerCase();
-  const matches = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(search),
-  );
+  const matches = patients.filter((patient) => patient.name.toLowerCase().includes(search));
 
   return (
     <>
@@ -53,9 +34,7 @@ export function PatientList() {
             aria-label={t("Search patient names")}
           />
         </InputGroup>
-        <Eyebrow>
-          {t("{shown} of {total}", { shown: matches.length, total: patients.length })}
-        </Eyebrow>
+        <Eyebrow>{t("{shown} of {total}", { shown: matches.length, total: patients.length })}</Eyebrow>
       </div>
 
       {matches.length ? (
@@ -72,11 +51,7 @@ export function PatientList() {
             const history = getVisitsForPatient(patient.id);
             const last = history[0];
             return (
-              <RecordRow
-                key={patient.id}
-                href={`/patients/${patient.id}`}
-                className={columns}
-              >
+              <RecordRow key={patient.id} href={`/patients/${patient.id}`} className={columns}>
                 <RowIndex index={index} />
                 <span className="hidden sm:block">
                   <PatientAvatar initials={patient.initials} />
@@ -94,9 +69,7 @@ export function PatientList() {
                   secondary={last ? `${last.date} · ${last.reason}` : t("No visits")}
                   secondaryClassName="sm:hidden"
                 />
-                <span className="hidden text-end font-mono text-xs tabular-nums sm:block">
-                  {history.length}
-                </span>
+                <span className="hidden text-end font-mono text-xs tabular-nums sm:block">{history.length}</span>
                 <Cell
                   className="hidden sm:grid"
                   align="end"
@@ -115,9 +88,7 @@ export function PatientList() {
               <RiGroupLine />
             </EmptyMedia>
             <EmptyTitle>{t("No matching patients")}</EmptyTitle>
-            <EmptyDescription>
-              {t("Search by the name recorded on the patient record.")}
-            </EmptyDescription>
+            <EmptyDescription>{t("Search by the name recorded on the patient record.")}</EmptyDescription>
           </EmptyHeader>
         </Empty>
       )}

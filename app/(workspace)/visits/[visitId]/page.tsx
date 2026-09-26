@@ -10,7 +10,7 @@ export function generateStaticParams() {
 export default async function Page({ params }: PageProps<"/visits/[visitId]">) {
   const { visitId } = await params;
   const { demo } = await getI18n();
-  const { getNote, getPatientForVisit, getTranscript, getVersions, getVisit, signedAt } = demo;
+  const { approvedAt, getNote, getPatientForVisit, getTranscript, getVersions, getVisit } = demo;
   const visit = getVisit(visitId);
   const patient = getPatientForVisit(visitId);
 
@@ -20,11 +20,13 @@ export default async function Page({ params }: PageProps<"/visits/[visitId]">) {
 
   return (
     <Consultation
+      // A recording's draft arriving swaps the page for one with a note on it.
+      key={`${visitId}|${note ? "note" : "none"}`}
       data={{
+        visitId,
         patient,
         reason: visit.reason,
         dateLong: visit.dateLong,
-        time: visit.time,
         duration: visit.manual ? undefined : visit.duration,
         manual: visit.manual,
         status: visit.status,
@@ -32,7 +34,7 @@ export default async function Page({ params }: PageProps<"/visits/[visitId]">) {
         note,
         transcript: getTranscript(visitId),
         versions: note ? getVersions(visitId) : [],
-        signedAt: signedAt[visitId],
+        approvedAt: approvedAt[visitId],
       }}
     />
   );
