@@ -8,6 +8,7 @@ import { getI18n } from "@/lib/i18n/server";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/components/i18n-provider";
+import { ViewTransitionErrors } from "@/components/view-transition-errors";
 
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -30,7 +31,7 @@ const vazirmatn = localFont({
 
 export const metadata: Metadata = {
   title: "Scribe",
-  description: "A doctor-first AI medical scribe for capturing, reviewing, and approving consultation notes.",
+  description: "A doctor-first AI medical scribe: record a visit, review its note and the patient's instructions, approve.",
 };
 
 /**
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
  * sign-in screen can stand on its own.
  */
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { locale, dir, changes, now } = await getI18n();
+  const { locale, dir } = await getI18n();
 
   return (
     <html
@@ -56,8 +57,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       )}
     >
       <body>
+        <ViewTransitionErrors />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <I18nProvider locale={locale} changes={changes} now={now}>
+          <I18nProvider locale={locale}>
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster position={dir === "rtl" ? "bottom-left" : "bottom-right"} />
           </I18nProvider>

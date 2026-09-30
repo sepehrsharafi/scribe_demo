@@ -93,42 +93,36 @@ function EditingRow({
  * The medications as a table: drug, dose, frequency, duration. A row Scribe
  * could not be sure of is marked Unconfirmed with the reason, and the note
  * cannot be approved until the doctor has confirmed or corrected every one.
+ * It sits inside the note like any other part of it, so every change is one
+ * more step in the note's own undo history.
  */
-export function MedicationTable({
-  rows,
-  locked,
-  onEdit,
-  onConfirm,
-  onRemove,
-  onAdd,
-}: {
-  rows: Medication[];
-  locked: boolean;
-  onEdit: (id: string, fields: Fields, confirm: boolean) => void;
-  onConfirm: (id: string) => void;
-  onRemove: (id: string) => void;
-  /** Returns the new row's id. */
-  onAdd: () => string;
-}) {
+export function MedicationTable({ rows, onChange }: { rows: Medication[]; onChange: (rows: Medication[]) => void }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState<string | null>(null);
 
+  const update = (id: string, change: (row: Medication) => Medication) =>
+    onChange(rows.map((row) => (row.id === id ? change(row) : row)));
+
+  function add() {
+    const id = `added-${Date.now()}`;
+    onChange([...rows, { id, drug: "", dose: "", frequency: "", duration: "" }]);
+    setEditing(id);
+  }
+
   if (!rows.length) {
     return (
-      <div className="mt-2 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed px-4 py-3">
         <span className="text-muted-foreground">{t("None prescribed or changed.")}</span>
-        {!locked ? (
-          <Button variant="outline" size="sm" onClick={() => setEditing(onAdd())}>
-            <RiAddLine data-icon="inline-start" />
-            {t("Add medication")}
-          </Button>
-        ) : null}
+        <Button variant="outline" size="sm" onClick={add}>
+          <RiAddLine data-icon="inline-start" />
+          {t("Add medication")}
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="mt-3 space-y-3">
+    <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border">
         <Table>
           <TableHeader className="bg-muted/40">
@@ -141,25 +135,24 @@ export function MedicationTable({
                   {t(column.label)}
                 </TableHead>
               ))}
-              {!locked ? (
-                <TableHead className="h-10">
-                  <span className="sr-only">{t("Actions")}</span>
-                </TableHead>
-              ) : null}
+              <TableHead className="h-10">
+                <span className="sr-only">{t("Actions")}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) =>
-              editing === row.id && !locked ? (
+              editing === row.id ? (
                 <EditingRow
                   key={row.id}
                   row={row}
                   onDone={(fields) => {
-                    onEdit(row.id, fields, Boolean(row.unconfirmed));
+                    // Finishing the edit of an unconfirmed row is what confirms it.
+                    update(row.id, (item) => ({ ...item, ...fields, unconfirmed: undefined }));
                     setEditing(null);
                   }}
                   onRemove={() => {
-                    onRemove(row.id);
+                    onChange(rows.filter((item) => item.id !== row.id));
                     setEditing(null);
                   }}
                 />
@@ -168,12 +161,12 @@ export function MedicationTable({
                   key={row.id}
                   className={cn(
                     "align-top",
-                    row.unconfirmed && !locked && "bg-warning/5 hover:bg-warning/10 dark:bg-warning/10",
+                    row.unconfirmed && "bg-warning/5 hover:bg-warning/10 dark:bg-warning/10",
                   )}
                 >
                   <TableCell className="whitespace-normal">
                     <span className="font-semibold">{row.drug || "—"}</span>
-                    {row.unconfirmed && !locked ? (
+                    {row.unconfirmed ? (
                       <span className="mt-1.5 flex flex-wrap items-center gap-2">
                         <Badge className="gap-1.5 bg-warning/15 px-2.5 text-warning dark:bg-warning/20">
                           <RiErrorWarningLine />
@@ -189,27 +182,25 @@ export function MedicationTable({
                       )}
                     </TableCell>
                   ))}
-                  {!locked ? (
-                    <TableCell>
-                      <span className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setEditing(row.id)}
-                          aria-label={t("Edit {drug}", { drug: row.drug || t("medication") })}
-                          title={t("Edit")}
-                        >
-                          <RiPencilLine />
+                  <TableCell>
+                    <span className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setEditing(row.id)}
+                        aria-label={t("Edit {drug}", { drug: row.drug || t("medication") })}
+                        title={t("Edit")}
+                      >
+                        <RiPencilLine />
+                      </Button>
+                      {row.unconfirmed ? (
+                        <Button size="sm" onClick={() => update(row.id, (item) => ({ ...item, unconfirmed: undefined }))}>
+                          <RiCheckLine data-icon="inline-start" />
+                          {t("Confirm")}
                         </Button>
-                        {row.unconfirmed ? (
-                          <Button size="sm" onClick={() => onConfirm(row.id)}>
-                            <RiCheckLine data-icon="inline-start" />
-                            {t("Confirm")}
-                          </Button>
-                        ) : null}
-                      </span>
-                    </TableCell>
-                  ) : null}
+                      ) : null}
+                    </span>
+                  </TableCell>
                 </TableRow>
               ),
             )}
@@ -218,29 +209,22 @@ export function MedicationTable({
       </div>
 
       {/* Why each unconfirmed row is unconfirmed, in words, under the table. */}
-      {!locked
-        ? rows
-            .filter((row) => row.unconfirmed)
-            .map((row) => (
-              <p
-                key={row.id}
-                className="flex max-w-prose gap-2 text-xs leading-relaxed text-muted-foreground"
-              >
-                <RiErrorWarningLine className="mt-0.5 size-4 shrink-0 text-warning" />
-                <span>
-                  <span className="font-semibold text-foreground">{row.drug}: </span>
-                  {row.unconfirmed}
-                </span>
-              </p>
-            ))
-        : null}
+      {rows
+        .filter((row) => row.unconfirmed)
+        .map((row) => (
+          <p key={row.id} className="flex max-w-prose gap-2 text-xs leading-relaxed text-muted-foreground">
+            <RiErrorWarningLine className="mt-0.5 size-4 shrink-0 text-warning" />
+            <span>
+              <span className="font-semibold text-foreground">{row.drug}: </span>
+              {row.unconfirmed}
+            </span>
+          </p>
+        ))}
 
-      {!locked ? (
-        <Button variant="outline" size="sm" onClick={() => setEditing(onAdd())}>
-          <RiAddLine data-icon="inline-start" />
-          {t("Add medication")}
-        </Button>
-      ) : null}
+      <Button variant="outline" size="sm" onClick={add}>
+        <RiAddLine data-icon="inline-start" />
+        {t("Add medication")}
+      </Button>
     </div>
   );
 }

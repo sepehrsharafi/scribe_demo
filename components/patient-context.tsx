@@ -1,148 +1,224 @@
-"use client";
-
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { RiArrowRightLine } from "@remixicon/react";
-import type { SourcedEntry } from "@/lib/demo-data";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { Eyebrow } from "@/components/page-layout";
-import { ClinicalEmpty, ClinicalGroup, clinicalGrid, sourceCell } from "@/components/clinical-groups";
-import { useI18n } from "@/components/i18n-provider";
+import { RiArrowDownSFill, RiArrowRightLine, RiTimeLine } from "@remixicon/react";
+import { getI18n } from "@/lib/i18n/server";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { EntrySource } from "@/components/entry-source";
 
-/** Where an entry came from: a link to its consultation, or the registration record. */
-export function EntrySource({ item, className }: { item: SourcedEntry; className?: string }) {
-  const { t } = useI18n();
+/** **bold**, or [label](visitId) — an empty label reads as that visit's date. */
+const token = /\*\*(.+?)\*\*|\[([^\]]*)\]\((\w+)\)/g;
 
+/** Base UI measures the panel; this animates it between nothing and that height. */
+const panel =
+  "h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none";
+
+function Points({ items, render }: { items: string[]; render: (text: string) => ReactNode }) {
   return (
-    <span
-      className={cn(
-        "mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground",
-        className,
-      )}
-    >
-      {item.source ? (
-        <Link
-          href={`/visits/${item.source.id}`}
-          className="font-mono tabular-nums underline-offset-4 hover:text-foreground hover:underline"
-        >
-          {item.source.dateLong} · {item.source.reason}
-        </Link>
-      ) : (
-        <span>{t("Registration record")}</span>
-      )}
-      {item.pending ? <PendingBadge /> : null}
-    </span>
-  );
-}
-
-/** Recorded at a consultation whose note has not been approved yet. */
-export function PendingBadge() {
-  const { t } = useI18n();
-  return (
-    <Badge
-      className="bg-warning/15 px-2 text-warning dark:bg-warning/20"
-      title={t("From a note that is not approved yet")}
-    >
-      {t("Pending")}
-    </Badge>
-  );
-}
-
-/** One entry as it stands going into a consultation, with where it came from. */
-function ContextEntry({ item, alarm }: { item: SourcedEntry; alarm?: boolean }) {
-  return (
-    <li className={cn(clinicalGrid(false), "py-3")}>
-      <span className={cn("text-sm leading-snug", alarm ? "font-semibold text-destructive" : "font-medium")}>
-        {item.entry.text}
-      </span>
-      <EntrySource item={item} className={sourceCell} />
-    </li>
+    <ul className="grid list-disc gap-1.5 ps-5 text-sm leading-relaxed marker:text-muted-foreground">
+      {items.map((item) => (
+        <li key={item} className="ps-1 text-pretty">
+          {render(item)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
 /**
- * What the doctor would otherwise open the patient record for, in the same
- * ruled groups as the record itself: allergies (red when there are any),
- * problems, medications, and the last visit in a sentence. Every group keeps a
- * row even when it is empty.
+ * What to know about a patient, gathered from the record and the earlier
+ * notes: one line on who they are and why they are here, then — behind one
+ * fold — each problem on the record with what the notes say about it, and
+ * what the visit is for. Every visit it mentions links to that visit's note.
+ * Beside it, what they take, each medicine traced to where it was recorded.
  *
- * It lays out against its own width, so it sits full width above a note and
- * narrow beside a recording. `heading` replaces the "Patient context" label —
- * the recording rail puts the patient there.
+ * On a visit it is the Context tab, as things stood going in; on the patient
+ * page, as things stand now, for the next visit.
  */
-export function PatientContext({
+export async function PatientContext({
   patientId,
   visitId,
-  heading,
-  className,
+  planDay,
+  aside,
 }: {
   patientId: string;
+  /** The filed visit this is the context for; absent for the next one. */
   visitId?: string;
-  heading?: ReactNode;
-  className?: string;
+  /** yyyy-mm-dd the plan is for. Absent on the patient page, where the next visit has no date yet. */
+  planDay?: string;
+  /** Anything else that belongs beside it, such as the visit's files. */
+  aside?: ReactNode;
 }) {
-  const { t, demo } = useI18n();
-  const context = demo.getPatientContext(patientId, visitId);
-  const groups = [
-    { label: "Allergies", items: context.allergies, alarm: context.allergies.length > 0 },
-    { label: "Problems", items: context.problems, alarm: false },
-    { label: "Medications", items: context.medications, alarm: false },
-  ];
+  const { t, f, demo } = await getI18n();
+  const brief = demo.getBrief(patientId, visitId);
+  const { previous, medications } = demo.getPatientContext(patientId, visitId);
+
+  const strings = brief ? [brief.summary, ...brief.problems.flatMap((problem) => problem.points), ...brief.plan] : [];
+  const cited = new Set(strings.flatMap((text) => [...text.matchAll(token)].flatMap((match) => (match[3] ? [match[3]] : []))));
+
+  function inline(text: string) {
+    const parts: ReactNode[] = [];
+    let cursor = 0;
+    for (const match of text.matchAll(token)) {
+      const at = match.index ?? 0;
+      if (at > cursor) parts.push(text.slice(cursor, at));
+      const [, bold, label, id] = match;
+      if (bold) {
+        parts.push(
+          <strong key={at} className="font-semibold">
+            {bold}
+          </strong>,
+        );
+      } else {
+        const visit = demo.getVisit(id);
+        parts.push(
+          visit ? (
+            <Link
+              key={at}
+              href={`/visits/${visit.id}`}
+              title={visit.reason || t("New visit")}
+              className="font-mono text-[0.9em] whitespace-nowrap tabular-nums underline decoration-foreground/25 decoration-1 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+            >
+              {label || f.date(visit.day, "short")}
+            </Link>
+          ) : (
+            label
+          ),
+        );
+      }
+      cursor = at + match[0].length;
+    }
+    if (cursor < text.length) parts.push(text.slice(cursor));
+    return parts;
+  }
+
+  // Only a visit has a date for its plan; the patient page already says when they were last seen and is the record.
+  const onVisit = Boolean(planDay);
+  const sources = cited.size
+    ? cited.size === 1
+      ? t("From the record and 1 earlier note")
+      : t("From the record and {count} earlier notes", { count: cited.size })
+    : t("From the record");
 
   return (
-    <section className={cn("@container overflow-hidden rounded-2xl border", className)}>
-      <div className="flex items-center justify-between gap-3 border-b bg-accent px-4 py-3 text-accent-foreground">
-        {heading ?? <Eyebrow className="text-accent-foreground">{t("Patient context")}</Eyebrow>}
-        <Link
-          href={`/patients/${patientId}`}
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium hover:underline hover:underline-offset-4"
-        >
-          {t("Full record")}
-          <RiArrowRightLine className="size-4 rtl:-scale-x-100" />
-        </Link>
-      </div>
-
-      <div className="divide-y">
-        {groups.map((group) => (
-          <ClinicalGroup
-            key={group.label}
-            label={t(group.label)}
-            count={group.items.length}
-            caption={t("Recorded at")}
-            alarm={group.alarm}
-          >
-            {group.items.length ? (
-              group.items.map((item) => (
-                <ContextEntry key={item.entry.id} item={item} alarm={group.alarm} />
-              ))
-            ) : (
-              <ClinicalEmpty>{t("None recorded")}</ClinicalEmpty>
-            )}
-          </ClinicalGroup>
-        ))}
-
-        <ClinicalGroup label={t("Last visit")}>
-          {context.previous ? (
-            <li className={cn(clinicalGrid(false), "py-3")}>
-              <Link
-                href={`/visits/${context.previous.id}`}
-                className="text-sm font-medium underline-offset-4 hover:underline"
-              >
-                {context.previous.reason}
-              </Link>
-              <span className={cn("mt-1 font-mono text-xs text-muted-foreground tabular-nums", sourceCell)}>
-                {context.previous.dateLong}
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-14">
+      <div className="grid min-w-0 content-start gap-8">
+        <section aria-label={t("Summary")}>
+          <p className="max-w-[68ch] font-heading text-xl leading-snug font-medium tracking-tight text-pretty">
+            {brief ? inline(brief.summary) : t("New to the practice. Nothing is on record yet.")}
+          </p>
+          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>{sources}</span>
+            {onVisit && previous ? (
+              <span>
+                {t("Last visit")}{" "}
+                <Link
+                  href={`/visits/${previous.id}`}
+                  className="font-mono text-foreground tabular-nums underline-offset-4 hover:underline"
+                >
+                  {f.date(previous.day, "short")}
+                </Link>
               </span>
-              <p className="col-span-full mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                {context.previousSummary ?? demo.statusMeta[context.previous.status].description}
-              </p>
-            </li>
-          ) : (
-            <ClinicalEmpty>{t("The first consultation in Scribe.")}</ClinicalEmpty>
-          )}
-        </ClinicalGroup>
+            ) : null}
+            {onVisit ? (
+              <Link
+                href={`/patients/${patientId}`}
+                className="inline-flex items-center gap-1 font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                {t("Full record")}
+                <RiArrowRightLine className="size-4 rtl:-scale-x-100" />
+              </Link>
+            ) : null}
+          </p>
+        </section>
+
+        <Collapsible defaultOpen className="border-t">
+          <CollapsibleTrigger className="group/insights flex w-full items-center justify-between gap-4 py-4 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <span className="grid gap-0.5">
+              <span className="font-heading text-base font-semibold tracking-tight">{t("Patient insights")}</span>
+              <span className="text-xs text-muted-foreground">{t("Problem summary and visit plan")}</span>
+            </span>
+            <RiArrowDownSFill
+              aria-hidden="true"
+              className="size-5 shrink-0 text-muted-foreground transition-transform group-data-panel-open/insights:rotate-180"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className={panel}>
+            <div className="grid gap-8 pt-1 pb-2">
+              <section aria-labelledby="problem-summary" className="grid gap-2">
+                <h3 id="problem-summary" className="font-heading text-base font-semibold tracking-tight">
+                  {t("Problem summary")}
+                </h3>
+                {brief?.problems.length ? (
+                  <div className="divide-y">
+                    {brief.problems.map((problem) => (
+                      <Collapsible key={problem.title} defaultOpen>
+                        <CollapsibleTrigger className="group/problem flex w-full items-center gap-2 py-3 text-start text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                          <RiArrowDownSFill
+                            aria-hidden="true"
+                            className="size-4 shrink-0 -rotate-90 transition-transform group-data-panel-open/problem:rotate-0 rtl:rotate-90 rtl:group-data-panel-open/problem:rotate-0"
+                          />
+                          {problem.title}
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className={panel}>
+                          <div className="ps-6 pb-4">
+                            <Points items={problem.points} render={inline} />
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-2 text-sm text-muted-foreground">
+                    {t("Nothing on the record yet: no long-term problems to carry into this visit.")}
+                  </p>
+                )}
+              </section>
+
+              {brief?.plan.length ? (
+                <section aria-labelledby="visit-plan" className="grid gap-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 id="visit-plan" className="font-heading text-base font-semibold tracking-tight">
+                      {onVisit ? t("Visit plan") : t("Plan for the next visit")}
+                    </h3>
+                    {planDay ? (
+                      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground tabular-nums">
+                        <RiTimeLine className="size-4" aria-hidden="true" />
+                        {f.date(planDay, "short")}
+                      </span>
+                    ) : null}
+                  </div>
+                  <Points items={brief.plan} render={inline} />
+                </section>
+              ) : null}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
-    </section>
+
+      <aside className="grid min-w-0 content-start gap-10">
+        <section aria-labelledby="medications" className="grid content-start gap-3">
+          <h3
+            id="medications"
+            className="flex items-baseline justify-between gap-3 border-b pb-3 font-heading text-base font-semibold tracking-tight"
+          >
+            {t("Medications")}
+            <span className="font-mono text-xs font-normal text-muted-foreground tabular-nums">{medications.length}</span>
+          </h3>
+          {medications.length ? (
+            <ul className="grid gap-4">
+              {medications.map((item) => (
+                <li key={item.entry.id} className="grid">
+                  <span className="text-sm leading-snug font-medium">{item.entry.text}</span>
+                  <EntrySource item={item} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("None recorded")}</p>
+          )}
+        </section>
+        {aside}
+      </aside>
+    </div>
   );
 }

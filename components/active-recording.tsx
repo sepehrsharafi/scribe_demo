@@ -1,32 +1,24 @@
 "use client";
 
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
-import type { Patient } from "@/lib/demo-data";
 import { formatDuration } from "@/lib/utils";
 
-/** A patient added on the capture screen: the only two fields the product asks for. */
-export type NewPatient = { name: string; dob: string };
-
 /**
- * A consultation being recorded. It lives above the pages, in the workspace
- * layout, so leaving the recording screen does not end it — it carries on in
- * the corner until the doctor comes back to finish it.
+ * A visit being recorded. It lives above the pages, in the workspace layout,
+ * so leaving the visit does not end it — it carries on in the corner until
+ * the doctor comes back to finish it.
  *
  * Time is kept as timestamps, never as a ticking counter in state: nothing
  * here changes while the recording simply runs, so only the readouts that
  * show the time re-render, and nothing else on the page does.
  */
 export type LiveRecording = {
-  patient: Patient | null;
-  /** Set when the patient was added on the capture screen and is not on file yet. */
-  added: NewPatient | null;
-  phase: "recording" | "paused" | "stopped";
+  patient: { id: string; name: string };
+  phase: "recording" | "paused";
   /** Milliseconds captured before the current run. */
   banked: number;
-  /** When the current run began; null while paused or stopped. */
+  /** When the current run began; null while paused. */
   since: number | null;
-  /** Seconds restored from a lost session, if this recording resumed one. */
-  recovered: number;
 };
 
 /** Whole seconds captured so far. */
@@ -37,55 +29,81 @@ export function elapsedSeconds(recording: LiveRecording, now: number) {
 
 type Controls = {
   recording: LiveRecording | null;
-  start: (from: { patient: Patient | null; added: NewPatient | null; recovered?: number }) => void;
+  /** `recovered` is seconds restored from a session the browser lost. */
+  start: (patient: LiveRecording["patient"], recovered?: number) => void;
   pause: () => void;
   resume: () => void;
-  stop: () => void;
-  attach: (patient: Patient, added: NewPatient | null) => void;
   /** Ends it: saved, or thrown away. */
   clear: () => void;
 };
 
 const RecordingContext = createContext<Controls | null>(null);
 
+/**
+ * The microphone, opened for as long as a recording exists. Nothing is kept
+ * from it — the demo has no audio pipeline — but a page that is really
+ * listening is what lets the browser show the recording indicator on the tab
+ * and float the recording in its own window when the doctor switches away.
+ * If the microphone is refused or missing, the recording carries on without it.
+ */
+function useMicrophone(recording: LiveRecording | null) {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const exists = recording !== null;
+  const listening = recording?.phase === "recording";
+
+  useEffect(() => {
+    if (!exists) return;
+    let cancelled = false;
+    let opened: MediaStream | null = null;
+    navigator.mediaDevices
+      ?.getUserMedia({ audio: true })
+      .then((got) => {
+        opened = got;
+        // Discarded before the browser answered: close it straight away.
+        if (cancelled) got.getTracks().forEach((track) => track.stop());
+        else setStream(got);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      opened?.getTracks().forEach((track) => track.stop());
+      setStream(null);
+    };
+  }, [exists]);
+
+  useEffect(() => {
+    stream?.getAudioTracks().forEach((track) => (track.enabled = listening));
+  }, [stream, listening]);
+}
+
 export function ActiveRecordingProvider({ children }: { children: ReactNode }) {
   const [recording, setRecording] = useState<LiveRecording | null>(null);
 
-  function halt(phase: "paused" | "stopped") {
-    const now = Date.now();
-    setRecording((current) =>
-      current && current.phase !== "stopped"
-        ? {
-            ...current,
-            phase,
-            banked: current.banked + (current.since === null ? 0 : now - current.since),
-            since: null,
-          }
-        : current,
-    );
-  }
+  useMicrophone(recording);
 
   const controls: Controls = {
     recording,
-    start: ({ patient, added, recovered = 0 }) =>
-      setRecording({
-        patient,
-        added,
-        phase: "recording",
-        banked: recovered * 1000,
-        since: Date.now(),
-        recovered,
-      }),
-    pause: () => halt("paused"),
+    start: (patient, recovered = 0) =>
+      setRecording({ patient, phase: "recording", banked: recovered * 1000, since: Date.now() }),
+    pause: () => {
+      const now = Date.now();
+      setRecording((current) =>
+        current?.phase === "recording"
+          ? {
+              ...current,
+              phase: "paused",
+              banked: current.banked + (current.since === null ? 0 : now - current.since),
+              since: null,
+            }
+          : current,
+      );
+    },
     resume: () => {
       const now = Date.now();
       setRecording((current) =>
         current?.phase === "paused" ? { ...current, phase: "recording", since: now } : current,
       );
     },
-    stop: () => halt("stopped"),
-    attach: (patient, added) =>
-      setRecording((current) => (current ? { ...current, patient, added } : current)),
     clear: () => setRecording(null),
   };
 

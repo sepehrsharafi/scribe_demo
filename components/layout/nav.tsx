@@ -3,17 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  RiCalendar2Line,
-  RiDashboardLine,
   RiGroupLine,
+  RiHome5Line,
   RiQuestionLine,
   RiSettings3Line,
 } from "@remixicon/react";
-import { Badge } from "@/components/ui/badge";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,110 +18,47 @@ import {
 import { useI18n } from "@/components/i18n-provider";
 
 /*
- * Three destinations, because there are only three things in the product: the
- * day, the consultations, and the people they belong to. A note is not a fourth
- * place — it lives on its consultation.
+ * Visits are not in here: they are the list below, which is the sidebar's
+ * reason for being. What is left is the day's start page, the people, and the
+ * two support pages at the foot.
  */
-const destinations = [
-  { label: "Home", href: "/", icon: RiDashboardLine },
-  { label: "Visits", href: "/visits", icon: RiCalendar2Line },
-  { label: "Patients", href: "/patients", icon: RiGroupLine },
-];
+const places = {
+  main: [
+    { label: "Home", href: "/", icon: RiHome5Line },
+    { label: "Patients", href: "/patients", icon: RiGroupLine },
+  ],
+  support: [
+    { label: "Help", href: "/help", icon: RiQuestionLine },
+    { label: "Settings", href: "/settings", icon: RiSettings3Line },
+  ],
+};
 
-const support = [
-  { label: "Help", href: "/help", icon: RiQuestionLine },
-  { label: "Settings", href: "/settings", icon: RiSettings3Line },
-];
-
-/**
- * Which destination the current URL belongs to. This is the only thing in the
- * chrome that reacts to navigation, so it is the only thing that re-renders.
- */
-export function useSection() {
+/** The only part of the sidebar's navigation that has to know the current route. */
+export function Nav({ group }: { group: keyof typeof places }) {
   const pathname = usePathname();
-  // Capture always belongs to the consultations it produces.
-  const path = pathname.startsWith("/new") ? "/visits/new" : pathname;
-  const match = [...destinations, ...support].find(
-    (item) => item.href !== "/" && path.startsWith(item.href),
-  );
-  const { label, href } = match ?? destinations[0];
-  /** True on a page inside the section, where the section is the way back. */
-  const within = pathname !== href;
-  return { label, href, within };
-}
-
-function NavItem({
-  label,
-  href,
-  icon: Icon,
-  active,
-  children,
-}: {
-  label: string;
-  href: string;
-  icon: typeof RiDashboardLine;
-  active: boolean;
-  children?: React.ReactNode;
-}) {
   const { t } = useI18n();
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={active}
-        tooltip={t(label)}
-        className="h-10 gap-2.5 px-3"
-        render={<Link href={href} aria-current={active ? "page" : undefined} />}
-      >
-        <Icon />
-        <span className="flex-1">{t(label)}</span>
-        {children}
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-}
-
-export function Nav({ toReview }: { toReview: number }) {
-  const section = useSection();
-  const { t } = useI18n();
-
-  return (
-    <>
-      <SidebarGroup>
-        <SidebarGroupLabel className="font-mono text-2xs tracking-[0.14em] uppercase">
-          {t("Workspace")}
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {destinations.map((item) => (
-              <NavItem key={item.label} {...item} active={section.label === item.label}>
-                {/* The only number in the sidebar is notes waiting for the
-                    doctor's approval, so it wears the amber that means "still
-                    owed" everywhere else. */}
-                {item.label === "Visits" && toReview ? (
-                  <Badge
-                    className="h-6 min-w-6 rounded-full bg-warning/15 px-2 font-mono text-xs font-semibold text-warning tabular-nums group-data-[collapsible=icon]:hidden dark:bg-warning/20"
-                    aria-label={t("{count} notes to review", { count: toReview })}
-                    title={t("{count} notes to review", { count: toReview })}
-                  >
-                    {toReview}
-                  </Badge>
-                ) : null}
-              </NavItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      <SidebarGroup className="mt-auto">
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {support.map((item) => (
-              <NavItem key={item.label} {...item} active={section.label === item.label} />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </>
+    <SidebarGroup className="py-1">
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {places[group].map(({ label, href, icon: Icon }) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <SidebarMenuItem key={href}>
+                <SidebarMenuButton
+                  isActive={active}
+                  className="h-9 gap-2.5 px-2.5"
+                  render={<Link href={href} aria-current={active ? "page" : undefined} />}
+                >
+                  <Icon />
+                  <span>{t(label)}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

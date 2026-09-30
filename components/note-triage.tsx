@@ -22,34 +22,27 @@ const label = "font-mono text-2xs tracking-[0.12em] text-muted-foreground upperc
  */
 export function TriageBlock({
   triage,
-  locked,
   onChange,
 }: {
   triage: Triage;
-  locked: boolean;
   onChange: (field: keyof Triage, value: string) => void;
 }) {
   const { t } = useI18n();
 
-  const field = (name: keyof Triage, text: string, className?: string) =>
-    locked ? (
-      <span className={cn("block min-h-9 py-1.5 font-mono text-sm font-medium tabular-nums", className)}>
-        {text || "—"}
-      </span>
-    ) : (
-      <Input
-        value={text}
-        onChange={(event) => onChange(name, event.target.value)}
-        aria-label={t(name === "complaint" ? "Chief complaint" : vitals.find((v) => v.field === name)!.label)}
-        className={cn(
-          "-mx-2 h-9 w-[calc(100%+1rem)] rounded-lg bg-transparent px-2 text-sm font-medium tabular-nums hover:bg-muted focus-visible:bg-background dark:bg-transparent",
-          className,
-        )}
-      />
-    );
+  const field = (name: keyof Triage, text: string, className?: string) => (
+    <Input
+      value={text}
+      onChange={(event) => onChange(name, event.target.value)}
+      aria-label={t(name === "complaint" ? "Chief complaint" : vitals.find((v) => v.field === name)!.label)}
+      className={cn(
+        "-mx-2 h-9 w-[calc(100%+1rem)] rounded-lg bg-transparent px-2 text-sm font-medium tabular-nums hover:bg-muted focus-visible:bg-background dark:bg-transparent",
+        className,
+      )}
+    />
+  );
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border">
+    <div className="@container overflow-hidden rounded-xl border">
       <div className="border-b bg-muted/40 px-4 py-3">
         <span className={label}>{t("Triage · chief complaint")}</span>
         {field("complaint", triage.complaint)}

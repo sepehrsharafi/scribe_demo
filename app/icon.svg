@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- The brand mark: four squares, one of them the signal colour. It follows the browser's theme. -->
+  <style>
+    .ink { fill: #0a0a0a; }
+    .signal { fill: #6c3fc8; }
+    .quiet { fill: #d4d4d4; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #fafafa; }
+      .signal { fill: #a991f9; }
+      .quiet { fill: #525252; }
+    }
+  </style>
+  <rect class="ink" x="0" y="0" width="11" height="11" rx="1" />
+  <rect class="signal" x="13" y="0" width="11" height="11" rx="1" />
+  <rect class="quiet" x="0" y="13" width="11" height="11" rx="1" />
+  <rect class="ink" x="13" y="13" width="11" height="11" rx="1" />
+</svg>

@@ -1,29 +1,22 @@
 // Synthetic demo data. No real patient information belongs in this file.
+//
+// Only facts are stored: names, yyyy-mm-dd dates, HH:MM times, seconds. Every
+// label, relative day and age is worked out when it is shown (lib/format.ts),
+// and every status word lives with the component that says it.
 
 import type { Locale } from "@/lib/i18n/locales";
-import { translate } from "@/lib/i18n/translate";
 import { farsi } from "@/lib/demo-data-fa";
-import { formatDuration } from "@/lib/utils";
-import {
-  noChanges,
-  recordedStatus,
-  type WorkspaceChanges,
-} from "@/lib/workspace";
+import { demoToday } from "@/lib/format";
+import { noChanges, readyAt, type WorkspaceChanges } from "@/lib/workspace";
 
-export type VisitStatus =
-  | "uploading"
-  | "transcribing"
-  | "drafting"
-  | "draft-ready"
-  | "approved"
-  | "failed";
+export type VisitStatus = "processing" | "ready" | "approved" | "failed";
 
 export type Patient = {
   id: string;
   name: string;
-  initials: string;
-  dob: string;
-  age: number;
+  /** yyyy-mm-dd. */
+  born: string;
+  /** yyyy-mm. */
   registered: string;
   /** The standing clinical picture, kept consistent with the notes below. */
   record: ClinicalEntry[];
@@ -34,27 +27,30 @@ export type ClinicalEntry = {
   id: string;
   kind: "problem" | "medication" | "allergy";
   text: string;
-  /** The consultation it was recorded at. Absent when it came with the registration record. */
+  /** The visit it was recorded at. Absent when it came with the registration record. */
   visitId?: string;
-  /** The consultation at which it resolved or was stopped. */
+  /** The visit at which it resolved or was stopped. */
   endedVisitId?: string;
 };
 
 export type Visit = {
   id: string;
   patientId: string;
+  /** Empty until the note has been written — Scribe takes it from the conversation. */
   reason: string;
-  date: string;
-  dateLong: string;
-  /** yyyy-mm-dd. The language-neutral key visits are sorted by. */
+  /** yyyy-mm-dd. */
   day: string;
+  /** HH:MM. */
   time: string;
+  /** Length of the recording. 0 when nothing was recorded and the note was written by hand. */
+  seconds: number;
   status: VisitStatus;
-  duration: string;
-  durationSeconds: number;
-  failureReason?: string;
-  /** Typed straight into the note: no audio, no transcript, no pipeline. */
-  manual?: boolean;
+  /** HH:MM on the day of the visit. */
+  approvedAt?: string;
+  /** Why processing stopped. */
+  failure?: string;
+  /** When processing began, in epoch ms. Only visits processed in this browser have one. */
+  since?: number;
 };
 
 /** Every section a note can have, in the order it is read. */
@@ -90,7 +86,7 @@ export type Uncertain = { text: string; reason: string };
 export type NoteSection = {
   id: TextSectionId;
   body: string;
-  /** True when the consultation never covered this ground. Never filled in by the model. */
+  /** True when the visit never covered this ground. Never filled in by the model. */
   gap?: boolean;
   /** Highlighted in the note until the doctor has checked them. */
   uncertain?: Uncertain[];
@@ -117,14 +113,33 @@ export type Medication = {
 };
 
 /**
- * A note holds only the sections the consultation produced — a section with
- * nothing in it is left out, except the examination, which is always kept so
- * that an examination nobody did stays a visible gap.
+ * What the patient takes home, in plain words, written from the same
+ * conversation as the note. The medicines are not repeated here: the patient's
+ * copy lists them straight from the note's table.
+ */
+export const instructionOrder = ["summary", "steps", "followUp", "warning"] as const;
+
+export type InstructionId = (typeof instructionOrder)[number];
+
+export const instructionLabels: Record<InstructionId, string> = {
+  summary: "What we found",
+  steps: "What to do",
+  followUp: "Coming back",
+  warning: "Get help straight away if",
+};
+
+export type Instructions = Record<InstructionId, string>;
+
+/**
+ * The write-up of one visit: the clinical note and the patient's instructions.
+ * The note holds only the sections the visit produced — except the
+ * examination, which is always kept so that one nobody did stays a visible gap.
  */
 export type Note = {
   triage?: Triage;
   sections: NoteSection[];
   medications: Medication[];
+  instructions: Instructions;
 };
 
 export type Speaker = "Doctor" | "Patient" | "Companion";
@@ -135,43 +150,51 @@ export type TranscriptLine = {
   text: string;
 };
 
-export type NoteVersion = {
-  id: number;
-  label: string;
-  author: string;
-  time: string;
-  kind: "ai" | "manual" | "approval";
+/** A file attached to a visit: a letter, a scan, a result. */
+export type Attachment = {
+  id: string;
+  name: string;
+  kind: "image" | "pdf";
+  /** Bytes. */
+  size: number;
+  src: string;
 };
 
-export type VisitFilter = "all" | "draft-ready" | "approved" | "failed";
+/** What the practice attached to a visit besides the conversation itself. */
+export type VisitContext = {
+  files?: Attachment[];
+};
 
-/** A record entry with the consultation it came from, as a doctor reads it in context. */
+/**
+ * What to know going into a visit: one line on who the patient is and why
+ * they are here, each problem on the record with what the notes say about
+ * it, and what the visit is for. Strings carry **bold** and [](visitId) links.
+ */
+export type Brief = {
+  summary: string;
+  problems: { title: string; points: string[] }[];
+  /** For a visit, what it was for; for a patient, what is open for their next one. */
+  plan: string[];
+};
+
+/** A record entry with the visit it came from, as a doctor reads it in context. */
 export type SourcedEntry = {
   entry: ClinicalEntry;
   /** Absent when the entry came with the registration record. */
   source?: Visit;
-  /** Recorded at a consultation whose note is not approved yet. */
+  /** Recorded at a visit whose note is not approved yet. */
   pending: boolean;
 };
 
 /**
  * Everything in the demo that is written in a language. A second language is
- * this shape filled in again, keyed by the same ids; numbers, times and
- * statuses stay with the English source. Digits stay ASCII — the Farsi font
- * draws them as Persian numerals.
+ * this shape filled in again, keyed by the same ids; dates, times and numbers
+ * stay with the English source.
  */
 export type DemoTranslation = {
-  doctor: { name: string; initials: string; specialty: string; registration: string };
-  today: { weekday: string; long: string; short: string; label: string };
-  patients: Record<
-    string,
-    Pick<Patient, "name" | "initials" | "dob" | "registered"> & {
-      /** Entry id → text. */
-      record: Record<string, string>;
-    }
-  >;
-  visits: Record<string, Pick<Visit, "reason" | "date" | "dateLong" | "failureReason">>;
-  statusMeta: Record<VisitStatus, { label: string; description: string }>;
+  doctor: { name: string; specialty: string; registration: string };
+  patients: Record<string, { name: string; record: Record<string, string> }>;
+  visits: Record<string, { reason: string; failure?: string }>;
   notes: Record<
     string,
     {
@@ -181,40 +204,28 @@ export type DemoTranslation = {
       medications?: Record<string, Partial<Omit<Medication, "id">>>;
     }
   >;
+  instructions: Record<string, Instructions>;
   /** The spoken text of each transcript line, in order. */
   transcripts: Record<string, string[]>;
-  /** The label of each version, in order. */
-  versions: Record<string, string[]>;
-  /** Version authors, keyed by their English name. */
-  authors: Record<string, string>;
-  approvedAt: Record<string, string>;
-  visitFilters: Record<VisitFilter, string>;
+  /** Visit id → its files, file id → name. */
+  contexts: Record<string, { files?: Record<string, string> }>;
+  /** Visit or patient id → its brief, in the same markup. */
+  briefs: Record<string, Brief>;
 };
 
 const doctor = {
   name: "Dr. Priya Shah",
-  initials: "PS",
   specialty: "General practice",
   registration: "GMC 7654321",
   email: "priya@scribe.demo",
-};
-
-const today = {
-  weekday: "Tuesday",
-  long: "22 September 2026",
-  short: "22 Sep 2026",
-  label: "Today",
-  iso: "2026-09-22",
 };
 
 const patients: Patient[] = [
   {
     id: "p1",
     name: "Maya Thompson",
-    initials: "MT",
-    dob: "14 May 1988",
-    age: 38,
-    registered: "March 2021",
+    born: "1988-05-14",
+    registered: "2021-03",
     record: [
       {
         id: "p1.1",
@@ -242,10 +253,8 @@ const patients: Patient[] = [
   {
     id: "p2",
     name: "Jon Bell",
-    initials: "JB",
-    dob: "02 November 1971",
-    age: 54,
-    registered: "August 2016",
+    born: "1971-11-02",
+    registered: "2016-08",
     record: [
       { id: "p2.1", kind: "problem", text: "Hypertension, controlled", visitId: "v2" },
       { id: "p2.2", kind: "medication", text: "Amlodipine 5 mg once daily", visitId: "v2" },
@@ -254,10 +263,8 @@ const patients: Patient[] = [
   {
     id: "p3",
     name: "Elena Marquez",
-    initials: "EM",
-    dob: "29 January 1995",
-    age: 31,
-    registered: "January 2024",
+    born: "1995-01-29",
+    registered: "2024-01",
     record: [
       { id: "p3.1", kind: "problem", text: "Migraine with aura", visitId: "v3" },
       {
@@ -278,10 +285,8 @@ const patients: Patient[] = [
   {
     id: "p4",
     name: "Arthur Wright",
-    initials: "AW",
-    dob: "07 July 1948",
-    age: 78,
-    registered: "June 2009",
+    born: "1948-07-07",
+    registered: "2009-06",
     record: [
       { id: "p4.1", kind: "problem", text: "Type 2 diabetes" },
       { id: "p4.2", kind: "problem", text: "Atrial fibrillation" },
@@ -300,12 +305,11 @@ const patients: Patient[] = [
     ],
   },
   {
+    // Registered, never seen in Scribe: her first visit starts from the record alone.
     id: "p5",
     name: "Nadia Okonkwo",
-    initials: "NO",
-    dob: "23 March 1990",
-    age: 36,
-    registered: "November 2022",
+    born: "1990-03-23",
+    registered: "2022-11",
     record: [
       { id: "p5.1", kind: "problem", text: "Postnatal, delivered Aug 2026" },
       { id: "p5.2", kind: "allergy", text: "Latex" },
@@ -314,10 +318,8 @@ const patients: Patient[] = [
   {
     id: "p6",
     name: "Tomas Lindqvist",
-    initials: "TL",
-    dob: "11 December 1966",
-    age: 59,
-    registered: "February 2018",
+    born: "1966-12-11",
+    registered: "2018-02",
     record: [
       { id: "p6.1", kind: "problem", text: "Right knee pain, medial", visitId: "v5" },
       {
@@ -335,152 +337,84 @@ const visits: Visit[] = [
     id: "v9",
     patientId: "p4",
     reason: "Diabetes review",
-    date: "Today",
-    dateLong: "22 Sep 2026",
     day: "2026-09-22",
     time: "11:10",
-    status: "draft-ready",
-    duration: "13:05",
-    durationSeconds: 785,
-  },
-  {
-    id: "v7",
-    patientId: "p5",
-    reason: "Postnatal check",
-    date: "Today",
-    dateLong: "22 Sep 2026",
-    day: "2026-09-22",
-    time: "10:05",
-    status: "transcribing",
-    duration: "16:52",
-    durationSeconds: 1012,
+    seconds: 785,
+    status: "ready",
   },
   {
     id: "v1",
     patientId: "p1",
     reason: "Persistent cough",
-    date: "Today",
-    dateLong: "22 Sep 2026",
     day: "2026-09-22",
     time: "09:20",
-    status: "draft-ready",
-    duration: "14:26",
-    durationSeconds: 866,
+    seconds: 866,
+    status: "ready",
   },
   {
     id: "v2",
     patientId: "p2",
     reason: "Blood pressure review",
-    date: "Today",
-    dateLong: "22 Sep 2026",
     day: "2026-09-22",
     time: "08:40",
+    seconds: 668,
     status: "approved",
-    duration: "11:08",
-    durationSeconds: 668,
+    approvedAt: "09:01",
   },
   {
     id: "v3",
     patientId: "p3",
     reason: "Migraine follow-up",
-    date: "Yesterday",
-    dateLong: "21 Sep 2026",
-    day: "2026-09-21",
+    // Two weeks before the telephone call (v8) that went through the bloods it asked for.
+    day: "2026-09-07",
     time: "16:10",
+    seconds: 1062,
     status: "approved",
-    duration: "17:42",
-    durationSeconds: 1062,
+    approvedAt: "16:34",
   },
   {
+    // The upload stopped part-way. Retrying it runs the pipeline and this note arrives.
     id: "v4",
     patientId: "p4",
-    reason: "Medication review",
-    date: "Yesterday",
-    dateLong: "21 Sep 2026",
+    reason: "Hip pain",
     day: "2026-09-21",
     time: "14:30",
+    seconds: 558,
     status: "failed",
-    duration: "09:18",
-    durationSeconds: 558,
-    failureReason: "Upload interrupted at 74%. The audio is safe on this device.",
+    failure: "Upload interrupted at 74%. The audio is safe on this device.",
   },
   {
     id: "v5",
     patientId: "p6",
     reason: "Knee pain, right",
-    date: "Yesterday",
-    dateLong: "21 Sep 2026",
     day: "2026-09-21",
     time: "11:15",
+    seconds: 760,
     status: "approved",
-    duration: "12:40",
-    durationSeconds: 760,
+    approvedAt: "11:38",
   },
   {
     // A phone call: nothing to record, so the note was typed straight in.
     id: "v8",
     patientId: "p3",
     reason: "Telephone review — blood results",
-    date: "Yesterday",
-    dateLong: "21 Sep 2026",
     day: "2026-09-21",
     time: "09:05",
+    seconds: 0,
     status: "approved",
-    duration: "—",
-    durationSeconds: 0,
-    manual: true,
+    approvedAt: "09:16",
   },
   {
     id: "v6",
     patientId: "p1",
     reason: "Upper respiratory infection",
-    date: "18 Aug 2026",
-    dateLong: "18 Aug 2026",
     day: "2026-08-18",
     time: "15:45",
+    seconds: 534,
     status: "approved",
-    duration: "08:54",
-    durationSeconds: 534,
+    approvedAt: "16:02",
   },
 ];
-
-const statusMeta: Record<
-  VisitStatus,
-  { label: string; tone: "signal" | "hold" | "ink" | "mute"; description: string }
-> = {
-  // The three pipeline stages share one word: the doctor only needs to know
-  // the note is not ready yet. The stage itself is on the Activity tab.
-  uploading: {
-    label: "Processing",
-    tone: "mute",
-    description: "Uploading the audio in resumable parts.",
-  },
-  transcribing: {
-    label: "Processing",
-    tone: "mute",
-    description: "Transcribing and separating the speakers.",
-  },
-  drafting: {
-    label: "Processing",
-    tone: "mute",
-    description: "Building the structured note from the transcript.",
-  },
-  "draft-ready": {
-    label: "Ready to review",
-    tone: "hold",
-    description: "A draft note is waiting for your review.",
-  },
-  approved: {
-    label: "Approved",
-    tone: "ink",
-    description: "Locked clinical record. Later changes become addenda.",
-  },
-  failed: {
-    label: "Needs attention",
-    tone: "signal",
-    description: "Processing was interrupted. The audio is safe and the visit can be retried.",
-  },
-};
 
 const notes: Record<string, Note> = {
   v1: {
@@ -548,6 +482,15 @@ const notes: Record<string, Note> = {
         unconfirmed: "Named by the patient as “cetirizine, I think”. The dose was not said.",
       },
     ],
+    instructions: {
+      summary:
+        "Your cough is most likely a post-viral cough. It often follows a cold and can take several weeks to settle. Nothing you told me today suggests anything more serious.",
+      steps:
+        "• Have honey and a warm drink before bed.\n• Take the simple linctus at night if the cough keeps you awake, for up to two weeks.\n• You chose to hold off on a chest X-ray for now. We can arrange one at any time.",
+      followUp: "Come back in two weeks if the cough has not improved.",
+      warning:
+        "• You become breathless.\n• You have chest pain.\n• You develop a fever.\n• You cough up blood.",
+    },
   },
   v2: {
     triage: {
@@ -593,6 +536,15 @@ const notes: Record<string, Note> = {
         duration: "Ongoing",
       },
     ],
+    instructions: {
+      summary:
+        "Your blood pressure is well controlled on amlodipine. Today's reading was 136/82, which is where we want it.",
+      steps:
+        "• Check your blood pressure at home twice a week and write the readings down.\n• Keep up the walking and the lower-salt diet.\n• Book a blood test before your next appointment.",
+      followUp: "Come back in six months, and bring your home readings with you.",
+      warning:
+        "• Your home readings are above 150/95.\n• You get a severe headache, changes in your vision, or chest pain.",
+    },
   },
   v3: {
     triage: {
@@ -639,6 +591,76 @@ const notes: Record<string, Note> = {
         duration: "Ongoing",
       },
     ],
+    instructions: {
+      summary:
+        "Propranolol is working: your migraines have gone from about six days a month to two.",
+      steps:
+        "• Keep your headache diary for another eight weeks.\n• Keep your sleep times as regular as you can around night shifts.\n• Book a blood test for your blood count, kidneys, liver and iron.",
+      followUp: "Come back in three months.",
+      warning:
+        "• Your migraines rise above four days a month.\n• A headache feels different from your usual migraines, or comes with weakness, numbness or confusion.",
+    },
+  },
+  v4: {
+    triage: {
+      complaint: "Hip pain, both sides",
+      bp: "138/76",
+      hr: "74",
+      temp: "36.6",
+      spo2: "97",
+      weight: "80",
+    },
+    sections: [
+      {
+        id: "reason",
+        body: "Worsening pain in both hips over the past two months.",
+      },
+      {
+        id: "history",
+        body: "Arthur describes aching in both hips, worse on the right, after walking for more than ten minutes. Morning stiffness settles within half an hour. No falls, no pain at night, no fever or weight loss. His daughter reports paracetamol most days, taken only when the pain is bad. Codeine previously caused confusion.",
+      },
+      {
+        id: "examination",
+        body: "Pain at the end of rotation in both hips, right more than left. Walking without an aid.",
+      },
+      {
+        id: "assessment",
+        body: "Osteoarthritis of both hips, now limiting walking distance. Oral anti-inflammatories avoided because of apixaban.",
+      },
+      {
+        id: "tests",
+        body: "Physiotherapy referral for a strengthening programme.",
+      },
+      {
+        id: "advice",
+        body: "Paracetamol regularly rather than as needed, with ibuprofen gel to both hips. Keep active within comfort. Review in six weeks, sooner with a fall or a sudden worsening.",
+      },
+    ],
+    medications: [
+      {
+        id: "m1",
+        drug: "Paracetamol",
+        dose: "1 g",
+        frequency: "Four times daily",
+        duration: "Ongoing",
+      },
+      {
+        id: "m2",
+        drug: "Ibuprofen 5% gel",
+        dose: "Thin layer",
+        frequency: "Up to three times daily, to both hips",
+        duration: "Ongoing",
+      },
+    ],
+    instructions: {
+      summary:
+        "Your hip pain comes from wear in both hip joints (osteoarthritis). It is common, and keeping active helps it more than resting does.",
+      steps:
+        "• Take the paracetamol regularly, not only when the pain is bad.\n• Rub the ibuprofen gel into both hips up to three times a day.\n• Do not take ibuprofen tablets or other anti-inflammatory tablets — they do not mix safely with your blood thinner.\n• Keep walking every day, in stretches you are comfortable with. The physiotherapy team will contact you.",
+      followUp: "Come back in six weeks so we can see how you are getting on.",
+      warning:
+        "• You have a fall.\n• A hip suddenly becomes much more painful, or you cannot put weight on the leg.\n• You notice any bleeding.",
+    },
   },
   v5: {
     triage: {
@@ -684,6 +706,16 @@ const notes: Record<string, Note> = {
         duration: "Up to 4 weeks",
       },
     ],
+    instructions: {
+      summary:
+        "Your knee pain is most likely a strain of the ligament on the inside of the knee. There are no signs of torn cartilage.",
+      steps:
+        "• Keep moving, but ease off long downhill walks for now.\n• Do the thigh-strengthening exercises every day.\n• Take the ibuprofen with food, and only when you need it.",
+      followUp:
+        "Come back in four weeks if it has not settled — we can then think about physiotherapy.",
+      warning:
+        "• Your knee locks or gives way.\n• It becomes swollen, hot or red.\n• You get stomach pain or black stools while taking ibuprofen.",
+    },
   },
   v6: {
     triage: {
@@ -727,6 +759,12 @@ const notes: Record<string, Note> = {
         duration: "Until symptoms settle",
       },
     ],
+    instructions: {
+      summary: "You have a viral infection of the throat and nose. It will get better on its own.",
+      steps: "• Drink plenty of fluids and rest.\n• Take paracetamol if you need it.",
+      followUp: "Come back if you are not better after ten days.",
+      warning: "• You develop a fever.\n• You become breathless.\n• You find it hard to swallow.",
+    },
   },
   // Written by hand: a phone call, so there is no transcript and no triage.
   v8: {
@@ -766,6 +804,15 @@ const notes: Record<string, Note> = {
         duration: "Ongoing",
       },
     ],
+    instructions: {
+      summary:
+        "Your blood results are normal. Your iron stores are at the low end of normal, so we will check them again.",
+      steps:
+        "• Eat more iron-rich foods: red meat, beans, lentils and dark green vegetables.\n• Keep your headache diary.\n• Book a repeat iron blood test in three months.",
+      followUp: "We will see you in person in six weeks.",
+      warning:
+        "• Your headaches change in character, or come with weakness, numbness or confusion.",
+    },
   },
   v9: {
     triage: {
@@ -839,6 +886,15 @@ const notes: Record<string, Note> = {
         duration: "Ongoing",
       },
     ],
+    instructions: {
+      summary:
+        "Your sugar levels have been running high, partly because the evening metformin is sometimes missed. We are adding a new tablet, gliclazide.",
+      steps:
+        "• Put the evening metformin in your pill organiser.\n• Take the gliclazide once a day with breakfast.\n• Book a blood test for your HbA1c and kidneys in three months.",
+      followUp: "Come back in three months.",
+      warning:
+        "• You feel shaky, sweaty or confused — your sugar may be too low. Have something sugary straight away, then call us.\n• You notice any bleeding.",
+    },
   },
 };
 
@@ -954,6 +1010,53 @@ const transcripts: Record<string, TranscriptLine[]> = {
       text: "Stay on forty milligrams twice a day, keep the diary going for another couple of months, and we will review in three. I would also like some routine bloods, including your iron levels.",
     },
   ],
+  v4: [
+    {
+      speaker: "Doctor",
+      time: "00:15",
+      text: "What has been happening with your hips, Arthur?",
+    },
+    {
+      speaker: "Patient",
+      time: "00:22",
+      text: "They ache, both of them, the right one worse. After ten minutes of walking I have to stop.",
+    },
+    {
+      speaker: "Doctor",
+      time: "01:05",
+      text: "Are they stiff first thing? Any pain at night, falls, fevers, or weight loss?",
+    },
+    {
+      speaker: "Patient",
+      time: "01:14",
+      text: "Stiff for half an hour in the morning, then it eases. No falls. Nothing at night.",
+    },
+    {
+      speaker: "Companion",
+      time: "01:40",
+      text: "He takes the paracetamol most days, but only when it is bad. Codeine made him muddled last time.",
+    },
+    {
+      speaker: "Doctor",
+      time: "03:10",
+      text: "It hurts at the end of turning both hips, the right more than the left, and you are walking without a stick.",
+    },
+    {
+      speaker: "Doctor",
+      time: "05:25",
+      text: "This is wear and tear in the hips. I will not give you anti-inflammatory tablets because of the blood thinner. Take the paracetamol regularly, one gram four times a day, and rub ibuprofen gel into both hips up to three times a day.",
+    },
+    {
+      speaker: "Doctor",
+      time: "06:02",
+      text: "I will refer you to physiotherapy, and I would like to see you again in six weeks — sooner if you fall or it suddenly gets worse.",
+    },
+    {
+      speaker: "Companion",
+      time: "06:20",
+      text: "We will keep him walking a little every day.",
+    },
+  ],
   v5: [
     {
       speaker: "Doctor",
@@ -1062,108 +1165,297 @@ const transcripts: Record<string, TranscriptLine[]> = {
   ],
 };
 
-const versions: Record<string, NoteVersion[]> = {
-  v1: [
-    { id: 1, label: "AI draft generated", author: "Scribe", time: "09:38", kind: "ai" },
-    { id: 2, label: "History corrected", author: "You", time: "09:41", kind: "manual" },
-  ],
-  v2: [
-    { id: 1, label: "AI draft generated", author: "Scribe", time: "08:54", kind: "ai" },
-    { id: 2, label: "Advice rewritten as actions", author: "Scribe", time: "08:58", kind: "ai" },
-    { id: 3, label: "Approved and locked", author: "Dr. Priya Shah", time: "09:01", kind: "approval" },
-  ],
-  v3: [
-    { id: 1, label: "AI draft generated", author: "Scribe", time: "16:29", kind: "ai" },
-    { id: 2, label: "Approved and locked", author: "Dr. Priya Shah", time: "16:34", kind: "approval" },
-  ],
-  v5: [
-    { id: 1, label: "AI draft generated", author: "Scribe", time: "11:33", kind: "ai" },
-    { id: 2, label: "Examination clarified", author: "You", time: "11:36", kind: "manual" },
-    { id: 3, label: "Approved and locked", author: "Dr. Priya Shah", time: "11:38", kind: "approval" },
-  ],
-  v6: [
-    { id: 1, label: "AI draft generated", author: "Scribe", time: "15:58", kind: "ai" },
-    { id: 2, label: "Approved and locked", author: "Dr. Priya Shah", time: "16:02", kind: "approval" },
-  ],
-  v8: [
-    { id: 1, label: "Written by hand", author: "Dr. Priya Shah", time: "09:12", kind: "manual" },
-    { id: 2, label: "Approved and locked", author: "Dr. Priya Shah", time: "09:16", kind: "approval" },
-  ],
-  v9: [{ id: 1, label: "AI draft generated", author: "Scribe", time: "11:26", kind: "ai" }],
+/** What the practice gathered ahead of a visit. Files are served from /public/demo. */
+const contexts: Record<string, VisitContext> = {
+  v9: {
+    files: [
+      { id: "f1", name: "ECG, lead II — 19 Sep 2026", kind: "image", size: 20_150, src: "/demo/ecg.svg" },
+    ],
+  },
+  v8: {
+    files: [
+      {
+        id: "f2",
+        name: "Blood results — 19 Sep 2026",
+        kind: "pdf",
+        size: 3_340,
+        src: "/demo/blood-results.pdf",
+      },
+    ],
+  },
 };
 
-const approvedAt: Record<string, string> = {
-  v2: "22 Sep 2026 at 09:01",
-  v3: "21 Sep 2026 at 16:34",
-  v5: "21 Sep 2026 at 11:38",
-  v6: "18 Aug 2026 at 16:02",
-  v8: "21 Sep 2026 at 09:16",
+/**
+ * What Scribe tells the doctor before they go in, gathered from the record
+ * and the earlier notes: one brief per filed visit, as things stood going
+ * into it, and one per patient for their next visit. It says only what the
+ * record and those notes say.
+ *
+ * **Bold** marks a condition or a medicine; [](v6) is a link to the note a
+ * statement comes from, labelled with that visit's date when it is shown.
+ */
+const briefs: Record<string, Brief> = {
+  v6: {
+    summary: "38F, registered since March 2021 and seen in Scribe for the first time, so there is no earlier note to draw on.",
+    problems: [],
+    plan: [
+      "Take the history from the start — nothing earlier is in Scribe.",
+      "Her record carries no long-term conditions, regular medicines or allergies; confirm that still stands.",
+    ],
+  },
+  v1: {
+    summary: "38F seen on [](v6) with a self-limiting **upper respiratory tract infection**; there has been no contact since, so this is the first look at how it settled.",
+    problems: [
+      {
+        title: "Upper respiratory tract infection",
+        points: [
+          "Three days of sore throat, blocked nose and tiredness on [](v6).",
+          "No fever, no difficulty swallowing and no breathlessness.",
+          "Advised fluids and rest, with **paracetamol 1 g** up to four times a day as needed.",
+        ],
+      },
+    ],
+    plan: [
+      "Find out how the infection settled — she was to come back if it had not cleared within ten days.",
+      "Ask about the warning signs set last time: a fever, breathlessness or difficulty swallowing.",
+    ],
+  },
+  p1: {
+    summary: "38F with a **persistent post-viral cough** of about six weeks after an August infection; the note from [](v1) is still waiting for review, so its details are not yet confirmed.",
+    problems: [
+      {
+        title: "Persistent post-viral cough",
+        points: [
+          "Dry cough for about six weeks, worst at night and in the early hours, sometimes waking her.",
+          "Followed the upper respiratory infection of [](v6), which has since settled.",
+          "No red flags on [](v1); she declined a chest X-ray for now.",
+        ],
+      },
+    ],
+    plan: [
+      "Ask whether honey, warm drinks and **simple linctus** at night have helped.",
+      "Offer the chest X-ray again if the cough has not improved; sooner with breathlessness, chest pain, a fever or coughing up blood.",
+      "Confirm the **cetirizine** dose — Maya named it herself and gave none.",
+    ],
+  },
+  v2: {
+    summary: "54M, registered since August 2016 and seen in Scribe for the first time; his earlier care is in the old notes.",
+    problems: [],
+    plan: [
+      "Nothing from the old notes has been carried across yet — confirm his conditions, regular medicines and allergies.",
+      "Take the history from the start.",
+    ],
+  },
+  p2: {
+    summary: "54M with **hypertension**, adequately controlled on **amlodipine 5 mg** at the review on [](v2); the next review is due six months on.",
+    problems: [
+      {
+        title: "Hypertension, controlled",
+        points: [
+          "Home readings averaged about 138/84; 136/82 in clinic, with a regular pulse of 72, on [](v2).",
+          "Takes **amlodipine 5 mg** once daily without side effects.",
+          "Has cut down on salt and walks three times a week.",
+        ],
+      },
+    ],
+    plan: [
+      "Go through the routine bloods, including kidney function, taken before this appointment.",
+      "Look over the home-reading log — twice a week since [](v2).",
+      "Bring the review forward if home readings go above 150/95.",
+    ],
+  },
+  v3: {
+    summary: "31F, registered since January 2024 and seen in Scribe for the first time; the care before this is in the old notes.",
+    problems: [],
+    plan: [
+      "Take the history from the start — nothing earlier is in Scribe.",
+      "No regular medicines are recorded; confirm what she takes.",
+    ],
+  },
+  v8: {
+    summary: "31F with **migraine with aura**, improving on **propranolol 40 mg**; the bloods asked for on [](v3) are back and attached.",
+    problems: [
+      {
+        title: "Migraine with aura",
+        points: [
+          "Migraine days fell from about six a month to two, eight weeks after starting **propranolol 40 mg** twice daily.",
+          "Attacks shorter and milder, still preceded by visual aura; no side effects.",
+          "Irregular sleep around night shifts is the trigger she names.",
+        ],
+      },
+    ],
+    plan: [
+      "Go through the results that came back on 19 Sep: full blood count, kidney and liver function, and ferritin.",
+      "Ferritin is borderline — worth a word about iron in her diet.",
+      "Check the headache diary; review in three months, sooner if attacks go above four days a month.",
+    ],
+  },
+  p3: {
+    summary: "31F with **migraine with aura**, still improving on **propranolol**, and a **low-normal ferritin** found at the telephone review on [](v8).",
+    problems: [
+      {
+        title: "Migraine with aura",
+        points: [
+          "Two headaches in the fortnight before [](v8), neither with aura; sleeping better.",
+          "On **propranolol 40 mg** twice daily; reviewed eight weeks into treatment on [](v3).",
+          "Night-shift sleep has been the main trigger.",
+        ],
+      },
+      {
+        title: "Low-normal ferritin",
+        points: [
+          "Ferritin 42 µg/L; full blood count, kidney and liver function normal.",
+          "Iron in her diet was discussed on [](v8); the ferritin is to be repeated in three months.",
+        ],
+      },
+    ],
+    plan: [
+      "An in-person review about six weeks after [](v8) — sooner if the headaches change in character.",
+      "Go through the headache diary.",
+      "Repeat the ferritin in December 2026.",
+    ],
+  },
+  v4: {
+    summary: "78M with **type 2 diabetes**, **atrial fibrillation** and **osteoarthritis of both hips**, seen in Scribe for the first time; all of this comes from his registration record.",
+    problems: [
+      { title: "Type 2 diabetes", points: ["Takes **metformin 500 mg** twice daily."] },
+      {
+        title: "Atrial fibrillation",
+        points: ["Takes **apixaban 5 mg** twice daily and **bisoprolol 2.5 mg** once daily."],
+      },
+      { title: "Osteoarthritis, both hips", points: ["**Paracetamol 1 g** when he needs it."] },
+    ],
+    plan: [
+      "Prescribe with his anticoagulant in mind: anti-inflammatories by mouth carry a bleeding risk.",
+      "Avoid **codeine** — it has made him confused before.",
+    ],
+  },
+  v9: {
+    summary: "78M with **type 2 diabetes**, **atrial fibrillation** and **hip osteoarthritis**; the recording from [](v4) stopped part-way through uploading, so there is no note from it yet.",
+    problems: [
+      {
+        title: "Type 2 diabetes",
+        points: [
+          "Takes **metformin 500 mg** twice daily.",
+          "His daughter rang on Monday: the evening metformin is being missed.",
+        ],
+      },
+      {
+        title: "Atrial fibrillation",
+        points: [
+          "Takes **apixaban 5 mg** twice daily and **bisoprolol 2.5 mg** once daily.",
+          "The practice nurse took an ECG on Saturday; it is with the files.",
+        ],
+      },
+      {
+        title: "Osteoarthritis, both hips",
+        points: ["Seen about his hips on [](v4); that note is waiting on the upload.", "**Paracetamol** as needed."],
+      },
+    ],
+    plan: [
+      "Review his diabetes control, and how the evening **metformin** is being taken.",
+      "Look at the nurse's ECG from Saturday.",
+      "Retry the upload from [](v4) to bring in the hip note.",
+    ],
+  },
+  p4: {
+    summary: "78M with **type 2 diabetes**, started on **gliclazide** on [](v9) with its dose still to be confirmed; that note is waiting for review.",
+    problems: [
+      {
+        title: "Type 2 diabetes",
+        points: [
+          "Fasting home readings of 8–9 mmol/L most mornings on [](v9).",
+          "The evening **metformin** was sometimes missed; it went into the pill organiser.",
+          "**Gliclazide** started once daily with breakfast; the signs of a low sugar were explained.",
+        ],
+      },
+      {
+        title: "Atrial fibrillation",
+        points: [
+          "Irregular pulse of about 76, blood pressure 142/78, on [](v9).",
+          "Takes **apixaban** and **bisoprolol**.",
+        ],
+      },
+      {
+        title: "Osteoarthritis, both hips",
+        points: ["Seen on [](v4), but that recording did not finish uploading.", "**Paracetamol** as needed."],
+      },
+    ],
+    plan: [
+      "Confirm the **gliclazide** dose.",
+      "HbA1c and kidney function are due three months after [](v9).",
+      "Avoid **codeine** — it has made him confused before.",
+    ],
+  },
+  p5: {
+    summary: "36F, registered since November 2022, in the **postnatal** period after a birth in August 2026; she has not been seen in Scribe before.",
+    problems: [
+      {
+        title: "Postnatal",
+        points: ["Delivered in August 2026.", "No regular medicines are recorded."],
+      },
+    ],
+    plan: [
+      "Use latex-free gloves for any examination — she is allergic to **latex**.",
+      "Take the history from the start; this comes from her record alone.",
+    ],
+  },
+  v5: {
+    summary: "59M, registered since February 2018 and seen in Scribe for the first time.",
+    problems: [],
+    plan: [
+      "Take the history from the start — nothing earlier is in Scribe.",
+      "His record carries no long-term conditions, regular medicines or allergies; confirm that still stands.",
+    ],
+  },
+  p6: {
+    summary: "59M with **right medial knee pain** after a long hiking descent, seen on [](v5); review is due if it has not settled within four weeks.",
+    problems: [
+      {
+        title: "Right knee pain, medial",
+        points: [
+          "Began three weeks before [](v5), after a long descent on a hiking trip.",
+          "Worse going downstairs and after sitting; no locking, giving way or swelling.",
+          "Most likely a **medial collateral strain** or early irritation of the inner joint; nothing to suggest a torn meniscus.",
+        ],
+      },
+    ],
+    plan: [
+      "Ask how relative rest, easing off long descents and the quadriceps exercises have gone.",
+      "Check how much **ibuprofen 400 mg** he is taking — up to three times a day with food.",
+      "Consider physiotherapy if it has not settled.",
+    ],
+  },
 };
-
-/** The worklist filters. Lives here so server components can read them too. */
-const visitFilters: { id: VisitFilter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "draft-ready", label: "To review" },
-  { id: "approved", label: "Approved" },
-  { id: "failed", label: "Attention" },
-];
 
 /** Audio restored from the device after the browser closed mid-visit. */
 const recovery = { patientId: "p1", seconds: 522 };
 
 type Dataset = {
   doctor: typeof doctor;
-  today: typeof today;
   patients: Patient[];
   visits: Visit[];
-  statusMeta: typeof statusMeta;
   notes: Record<string, Note>;
   transcripts: Record<string, TranscriptLine[]>;
-  versions: Record<string, NoteVersion[]>;
-  approvedAt: Record<string, string>;
-  visitFilters: typeof visitFilters;
-  recovery: typeof recovery;
+  contexts: Record<string, VisitContext>;
+  briefs: Record<string, Brief>;
 };
 
-const english: Dataset = {
-  doctor,
-  today,
-  patients,
-  visits,
-  statusMeta,
-  notes,
-  transcripts,
-  versions,
-  approvedAt,
-  visitFilters,
-  recovery,
-};
+const english: Dataset = { doctor, patients, visits, notes, transcripts, contexts, briefs };
 
 /** The English dataset with every written field replaced by its translation. */
 function translated(to: DemoTranslation): Dataset {
-  const byId = <T,>(list: Record<string, T[]>, map: (item: T, index: number, id: string) => T) =>
-    Object.fromEntries(
-      Object.entries(list).map(([id, items]) => [id, items.map((item, i) => map(item, i, id))]),
-    );
-
   return {
     doctor: { ...doctor, ...to.doctor },
-    today: { ...today, ...to.today },
     patients: patients.map((patient) => {
-      const { record, ...written } = to.patients[patient.id];
+      const { name, record } = to.patients[patient.id];
       return {
         ...patient,
-        ...written,
+        name,
         record: patient.record.map((entry) => ({ ...entry, text: record[entry.id] ?? entry.text })),
       };
     }),
     visits: visits.map((visit) => ({ ...visit, ...to.visits[visit.id] })),
-    statusMeta: Object.fromEntries(
-      Object.entries(statusMeta).map(([status, meta]) => [
-        status,
-        { ...meta, ...to.statusMeta[status as VisitStatus] },
-      ]),
-    ) as typeof statusMeta,
     notes: Object.fromEntries(
       Object.entries(notes).map(([id, note]) => {
         const into = to.notes[id];
@@ -1174,52 +1466,47 @@ function translated(to: DemoTranslation): Dataset {
               ...note.triage,
               complaint: into?.complaint ?? note.triage.complaint,
             },
-            sections: note.sections.map((section) => ({
-              ...section,
-              ...into?.sections[section.id],
-            })),
-            medications: note.medications.map((row) => ({
-              ...row,
-              ...into?.medications?.[row.id],
-            })),
+            sections: note.sections.map((section) => ({ ...section, ...into?.sections[section.id] })),
+            medications: note.medications.map((row) => ({ ...row, ...into?.medications?.[row.id] })),
+            instructions: to.instructions[id] ?? note.instructions,
           },
         ];
       }),
     ),
-    transcripts: byId(transcripts, (line, i, id) => ({
-      ...line,
-      text: to.transcripts[id]?.[i] ?? line.text,
-    })),
-    versions: byId(versions, (version, i, id) => ({
-      ...version,
-      label: to.versions[id]?.[i] ?? version.label,
-      author: to.authors[version.author] ?? version.author,
-    })),
-    approvedAt: { ...approvedAt, ...to.approvedAt },
-    visitFilters: visitFilters.map((filter) => ({ ...filter, label: to.visitFilters[filter.id] })),
-    recovery,
+    transcripts: Object.fromEntries(
+      Object.entries(transcripts).map(([id, lines]) => [
+        id,
+        lines.map((line, index) => ({ ...line, text: to.transcripts[id]?.[index] ?? line.text })),
+      ]),
+    ),
+    contexts: Object.fromEntries(
+      Object.entries(contexts).map(([id, context]) => {
+        const into = to.contexts[id];
+        return [
+          id,
+          {
+            files: context.files?.map((file) => ({ ...file, name: into?.files?.[file.id] ?? file.name })),
+          },
+        ];
+      }),
+    ),
+    briefs: { ...briefs, ...to.briefs },
   };
 }
 
-const initialsOf = (name: string, locale: Locale) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .map((word) => word[0])
-    // Persian letters would join into a word; a zero-width non-joiner keeps them apart.
-    .join(locale === "fa" ? "‌" : "")
-    .slice(0, 2)
-    .toUpperCase();
+/**
+ * When a visit happened, as a key that sorts. The demo's day is fixed but the
+ * clock is real, so a visit recorded in this browser is simply the newest of
+ * its day, whatever time it says.
+ */
+export const visitOrder = (visit: Visit) =>
+  `${visit.day}T${visit.since && visit.day === demoToday ? `~${visit.since}` : visit.time}`;
 
-/** When a visit happened, as a key that sorts. Language-neutral. */
-export const visitOrder = (visit: Visit) => `${visit.day}T${visit.time}`;
-
-/** HH:MM, some minutes on. */
-function later(time: string, minutes: number) {
-  const [hours, mins] = time.split(":").map(Number);
-  const total = hours * 60 + mins + minutes;
-  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-}
+/** Keys are compared by code point: collation would put the "~" above before digits. */
+const latestFirst = (a: Visit, b: Visit) => {
+  const [x, y] = [visitOrder(a), visitOrder(b)];
+  return x === y ? 0 : x < y ? 1 : -1;
+};
 
 /** Once a note is approved, everything the doctor had to check has been checked. */
 function settled(note: Note): Note {
@@ -1231,147 +1518,116 @@ function settled(note: Note): Note {
 }
 
 /**
- * One language's dataset with this browser's changes laid over it: recorded
- * visits and added patients joined in, approvals applied. `now` is fixed per
- * request, so the server render and the client hydration agree on every
- * status.
+ * One language's dataset with this browser's changes laid over it: added
+ * patients and recorded visits joined in, retried uploads and approvals
+ * applied. `now` is fixed per request, so every component in a render agrees
+ * on every status.
  */
-function withChanges(
-  data: Dataset,
-  locale: Locale,
-  changes: WorkspaceChanges,
-  now: number,
-): Dataset {
-  const t = translate(locale);
-  const source = data.patients[0];
+function withChanges(data: Dataset, changes: WorkspaceChanges, now: number): Dataset {
+  const template = data.visits.find((visit) => visit.id === "v1")!;
+  const source = data.patients.find((patient) => patient.id === template.patientId)!;
   const sourceName = source.name.split(" ")[0];
 
-  const added: Patient[] = changes.patients.map((patient) => {
-    const born = new Date(patient.dob);
-    return {
-      id: patient.id,
-      name: patient.name,
-      initials: initialsOf(patient.name, locale),
-      dob: born.toLocaleDateString(locale === "fa" ? "fa-IR-u-nu-latn" : "en-GB", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
-      age: Math.max(0, new Date(now).getFullYear() - born.getFullYear()),
-      registered: data.today.label,
+  const patientsNow = [
+    ...data.patients,
+    ...changes.patients.map((patient) => ({
+      ...patient,
+      registered: demoToday.slice(0, 7),
       record: [],
-    };
-  });
-  const allPatients = [...data.patients, ...added];
-
-  const recorded = changes.recorded.map((entry) => ({
-    entry,
-    visit: {
-      id: entry.id,
-      patientId: entry.patientId,
-      reason: data.visits.find((visit) => visit.id === "v1")?.reason ?? "",
-      date: data.today.label,
-      dateLong: data.today.short,
-      day: data.today.iso,
-      time: entry.time,
-      status: recordedStatus(entry, now),
-      duration: formatDuration(entry.seconds),
-      durationSeconds: entry.seconds,
-    } satisfies Visit,
-  }));
-
-  const firstName = (patientId: string) =>
-    allPatients.find((patient) => patient.id === patientId)?.name.split(" ")[0] ?? sourceName;
-  // A freshly recorded demo consultation is Maya's, rewritten for whoever was in the room.
-  const rename = (text: string, name: string) => text.replaceAll(sourceName, name);
+    })),
+  ];
 
   const notesNow = { ...data.notes };
   const transcriptsNow = { ...data.transcripts };
-  const versionsNow = { ...data.versions };
-  for (const { entry, visit } of recorded) {
-    if (visit.status !== "draft-ready") continue;
-    const name = firstName(entry.patientId);
+
+  // A freshly recorded demo visit is Maya's, rewritten for whoever was in the room.
+  const recorded: Visit[] = changes.recorded.map((entry) => {
+    const ready = now >= readyAt(entry.stoppedAt);
+    const name = patientsNow.find((patient) => patient.id === entry.patientId)?.name.split(" ")[0];
+    const rename = (text: string) => (name ? text.replaceAll(sourceName, name) : text);
     const draft = data.notes.v1;
     notesNow[entry.id] = {
       ...draft,
       sections: draft.sections.map((section) => ({
         ...section,
-        body: rename(section.body, name),
-        uncertain: section.uncertain?.map((flag) => ({ ...flag, text: rename(flag.text, name) })),
+        body: rename(section.body),
+        uncertain: section.uncertain?.map((flag) => ({ ...flag, text: rename(flag.text) })),
       })),
     };
-    transcriptsNow[entry.id] = data.transcripts.v1.map((line) => ({
-      ...line,
-      text: rename(line.text, name),
-    }));
-    versionsNow[entry.id] = [
-      { ...data.versions.v1[0], time: later(entry.time, Math.ceil(entry.seconds / 60) + 1) },
-    ];
-  }
+    transcriptsNow[entry.id] = data.transcripts.v1.map((line) => ({ ...line, text: rename(line.text) }));
+    return {
+      id: entry.id,
+      patientId: entry.patientId,
+      reason: ready ? template.reason : "",
+      day: demoToday,
+      time: entry.time,
+      seconds: entry.seconds,
+      status: ready ? "ready" : "processing",
+      since: entry.stoppedAt,
+    };
+  });
 
-  const visitsNow = [...recorded.map(({ visit }) => visit), ...data.visits].map((visit) =>
-    visit.status === "draft-ready" && changes.approved[visit.id]
-      ? { ...visit, status: "approved" as const }
-      : visit,
-  );
+  const visitsNow = [...recorded, ...data.visits].map((visit): Visit => {
+    const retried = changes.retried[visit.id];
+    const current: Visit =
+      visit.status === "failed" && retried
+        ? {
+            ...visit,
+            status: now >= readyAt(retried) ? "ready" : "processing",
+            failure: undefined,
+            since: retried,
+          }
+        : visit;
+    const approvedAt = changes.approved[visit.id];
+    if (current.status !== "ready" || !approvedAt) return current;
+    notesNow[visit.id] = settled(notesNow[visit.id]);
+    return { ...current, status: "approved", approvedAt };
+  });
 
-  const approvedNow = { ...data.approvedAt };
-  for (const [id, time] of Object.entries(changes.approved)) {
-    if (!notesNow[id]) continue;
-    notesNow[id] = settled(notesNow[id]);
-    const chain = versionsNow[id] ?? [];
-    versionsNow[id] = [
-      ...chain,
-      {
-        id: chain.length + 1,
-        label: t("Approved and locked"),
-        author: data.doctor.name,
-        time,
-        kind: "approval",
-      },
-    ];
-    approvedNow[id] = t("{date} at {time}", { date: data.today.short, time });
-  }
-
-  return {
-    ...data,
-    patients: allPatients,
-    visits: visitsNow,
-    notes: notesNow,
-    transcripts: transcriptsNow,
-    versions: versionsNow,
-    approvedAt: approvedNow,
-  };
+  return { ...data, patients: patientsNow, visits: visitsNow, notes: notesNow, transcripts: transcriptsNow };
 }
 
 /** Lookups over one language's dataset. Every screen reads the demo through this. */
 function views(data: Dataset) {
+  const visits = [...data.visits].sort(latestFirst);
   const getPatient = (patientId: string | undefined) =>
     data.patients.find((patient) => patient.id === patientId);
-  const getVisit = (visitId: string | undefined) =>
-    data.visits.find((visit) => visit.id === visitId);
+  const getVisit = (visitId: string | undefined) => visits.find((visit) => visit.id === visitId);
   const getVisitsForPatient = (patientId: string) =>
-    data.visits
-      .filter((visit) => visit.patientId === patientId)
-      .sort((a, b) => visitOrder(b).localeCompare(visitOrder(a)));
+    visits.filter((visit) => visit.patientId === patientId);
+  /** Nothing is written until processing has finished. */
+  const written = (visitId: string) => {
+    const status = getVisit(visitId)?.status;
+    return status === "ready" || status === "approved";
+  };
+  const getNote = (visitId: string): Note | undefined =>
+    written(visitId) ? data.notes[visitId] : undefined;
 
   return {
-    ...data,
+    doctor: data.doctor,
+    recovery,
+    patients: data.patients,
+    /** Latest first. */
+    visits,
     getPatient,
     getVisit,
-    getPatientForVisit: (visitId: string | undefined) => getPatient(getVisit(visitId)?.patientId),
     getVisitsForPatient,
-    /** The consultation this patient had before the given one, if any. */
-    getPreviousVisit(visit: Visit) {
-      return getVisitsForPatient(visit.patientId).find(
-        (other) => other.id !== visit.id && visitOrder(other) < visitOrder(visit),
-      );
-    },
+    getNote,
+    getTranscript: (visitId: string): TranscriptLine[] =>
+      written(visitId) ? (data.transcripts[visitId] ?? []) : [],
+    getContext: (visitId: string): VisitContext => data.contexts[visitId] ?? {},
     /**
-     * What a doctor wants to know going into a consultation: the visit before
-     * it, and the problems, medications and allergies on record at the time —
-     * each with the consultation it came from. Entries this visit itself
-     * records are in its note, not here.
+     * The brief for going into a visit: as things stood before a filed one,
+     * or as they stand now for the next. Undefined for someone with nothing
+     * on record yet.
+     */
+    getBrief: (patientId: string, visitId?: string): Brief | undefined =>
+      (visitId ? data.briefs[visitId] : undefined) ?? data.briefs[patientId],
+    /**
+     * What a doctor wants to know going into a visit: the one before it, and
+     * the problems, medications and allergies on record at the time — each
+     * with the visit it came from. Entries this visit itself records are in
+     * its note, not here.
      */
     getPatientContext(patientId: string, visitId?: string) {
       const current = getVisit(visitId);
@@ -1380,39 +1636,27 @@ function views(data: Dataset) {
       const earlier = getVisitsForPatient(patientId).filter(
         (visit) => visit.id !== visitId && before(visit),
       );
-      const previous = earlier.find((visit) => data.notes[visit.id]) ?? earlier[0];
+      const previous = earlier.find((visit) => getNote(visit.id)) ?? earlier[0];
 
       const entries: SourcedEntry[] = (getPatient(patientId)?.record ?? []).flatMap((entry) => {
         const source = getVisit(entry.visitId);
         const ended = getVisit(entry.endedVisitId);
-        if (entry.visitId === visitId || (entry.visitId && !source) || !before(source)) return [];
+        const recordedHere = Boolean(visitId) && entry.visitId === visitId;
+        if (recordedHere || (entry.visitId && !source) || !before(source)) return [];
         if (ended && (!current || before(ended))) return [];
         return [{ entry, source, pending: Boolean(source && source.status !== "approved") }];
       });
-      const of = (kind: ClinicalEntry["kind"]) =>
-        entries.filter((item) => item.entry.kind === kind);
+      const of = (kind: ClinicalEntry["kind"]) => entries.filter((item) => item.entry.kind === kind);
 
       return {
         previous,
-        previousSummary: previous
-          ? data.notes[previous.id]?.sections.find((section) => section.id === "assessment")?.body
-          : undefined,
+        allergies: of("allergy"),
         problems: of("problem"),
         medications: of("medication"),
-        allergies: of("allergy"),
       };
     },
-    getNote: (visitId: string): Note | undefined => data.notes[visitId],
-    getTranscript: (visitId: string): TranscriptLine[] => data.transcripts[visitId] ?? [],
-    getVersions: (visitId: string): NoteVersion[] => data.versions[visitId] ?? [],
-    /** Visits that cannot move forward without the doctor. */
-    actionableVisits: data.visits.filter(
-      (visit) => visit.status === "draft-ready" || visit.status === "failed",
-    ),
-    /** Drafts waiting for the doctor's approval — the sidebar's only number. */
-    toReview: data.visits.filter((visit) => visit.status === "draft-ready"),
-    /** The consultations held today. */
-    todaysVisits: data.visits.filter((visit) => visit.day === data.today.iso),
+    /** Visits that cannot move forward without the doctor, latest first. */
+    waiting: visits.filter((visit) => visit.status === "ready" || visit.status === "failed"),
   };
 }
 
@@ -1422,37 +1666,11 @@ const datasets = { en: english, fa: translated(farsi) };
 const untouched = { en: views(datasets.en), fa: views(datasets.fa) };
 
 /** The demo in one language, with whatever this browser has changed in it. */
-export function demo(
-  locale: Locale,
-  changes: WorkspaceChanges = noChanges,
-  now = 0,
-): Demo {
+export function demo(locale: Locale, changes: WorkspaceChanges = noChanges, now = 0): Demo {
   const changed =
-    changes.recorded.length || changes.patients.length || Object.keys(changes.approved).length;
-  return changed
-    ? views(withChanges(datasets[locale], locale, changes, now))
-    : untouched[locale];
-}
-
-/**
- * Writing a consultation up by hand costs roughly two thirds of the time the
- * consultation itself took. That ratio is the only assumption behind every
- * "time saved" figure in the product, and it is stated on screen rather than
- * hidden, because the number is the whole claim.
- */
-const writeUpRatio = 0.65;
-
-/** Minutes of write-up Scribe absorbed for these consultations. */
-export function minutesSaved(list: Visit[]) {
-  const seconds = list
-    .filter((visit) => visit.status !== "failed")
-    .reduce((total, visit) => total + visit.durationSeconds * writeUpRatio, 0);
-  return Math.round(seconds / 60);
-}
-
-export function toVisitFilter(value: string | string[] | undefined): VisitFilter {
-  const candidate = Array.isArray(value) ? value[0] : value;
-  return visitFilters.some((option) => option.id === candidate)
-    ? (candidate as VisitFilter)
-    : "all";
+    changes.recorded.length ||
+    changes.patients.length ||
+    Object.keys(changes.approved).length ||
+    Object.keys(changes.retried).length;
+  return changed ? views(withChanges(datasets[locale], changes, now)) : untouched[locale];
 }

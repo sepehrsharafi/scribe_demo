@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { demo } from "@/lib/demo-data";
+import { formatter } from "@/lib/format";
 import { direction, localeCookie, toLocale } from "@/lib/i18n/locales";
 import { translate } from "@/lib/i18n/translate";
 import { parseChanges, workspaceCookie } from "@/lib/workspace";
@@ -19,8 +20,8 @@ export const getI18n = cache(async () => {
     locale,
     dir: direction(locale),
     t: translate(locale),
+    f: formatter(locale),
     demo: demo(locale, changes, now),
-    changes,
     now,
   };
 });

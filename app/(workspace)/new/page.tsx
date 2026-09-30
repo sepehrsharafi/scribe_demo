@@ -1,20 +1,41 @@
-import { Capture } from "./capture";
+import { demoToday } from "@/lib/format";
+import { getI18n } from "@/lib/i18n/server";
+import { patientOptions } from "@/lib/patient-options";
+import { ContextPanel } from "@/components/context-panel";
+import { Page, PageHead, PageTransition } from "@/components/page-layout";
+import { PatientPicker } from "@/components/patient-picker";
+import { VisitIdentity } from "@/components/visit-identity";
+import { ChangePatientButton } from "@/components/new-visit-dialog";
+import { NewVisit } from "./new-visit";
 
-export default async function New({ searchParams }: PageProps<"/new">) {
-  const { resume, patient } = await searchParams;
-  const patientId = Array.isArray(patient) ? patient[0] : patient;
+/**
+ * A visit being started. With a patient it is the visit page itself, ready
+ * to record; without one, the only question is who it is with.
+ */
+export default async function NewVisitPage({ searchParams }: PageProps<"/new">) {
+  const { patient: asked, resume } = await searchParams;
+  const { t, f, demo } = await getI18n();
+  const patient = demo.getPatient(resume ? demo.recovery.patientId : Array.isArray(asked) ? asked[0] : asked);
 
-  /*
-   * `Capture` holds the stage it is on in state, and /new -> /new is a same
-   * route navigation, so without a key the flow would stay on the screen it was
-   * already showing. "New consultation" from a finished draft is exactly that
-   * navigation, and it did nothing until this key was here.
-   */
+  if (!patient) {
+    return (
+      <Page className="max-w-3xl space-y-8 py-12">
+        <PageHead title={t("Who is this visit with?")} description={t("Pick a patient, and the visit opens ready to record.")} />
+        <PatientPicker patients={patientOptions(demo, f)} lead />
+      </Page>
+    );
+  }
+
   return (
-    <Capture
-      key={`${resume ? "resume" : ""}|${patientId ?? ""}`}
-      resumed={Boolean(resume)}
-      patientId={patientId}
-    />
+    <PageTransition>
+      {/* /new → /new with someone else is the same route: the key starts the visit afresh. */}
+      <NewVisit
+        key={`${patient.id}|${resume ? "resume" : ""}`}
+        patient={{ id: patient.id, name: patient.name, firstName: patient.name.split(" ")[0] }}
+        recovered={resume ? demo.recovery.seconds : 0}
+        identity={<VisitIdentity patientId={patient.id} action={resume ? null : <ChangePatientButton />} />}
+        context={<ContextPanel patientId={patient.id} day={demoToday} extrasKey={`new:${patient.id}`} />}
+      />
+    </PageTransition>
   );
 }

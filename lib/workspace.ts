@@ -1,13 +1,11 @@
-// What this browser has done to the demo since it opened it: consultations
-// recorded, patients added, notes approved. It is a cookie rather than client
-// state so that every server-rendered surface — Home, the sidebar badge, the
+// What this browser has done to the demo since it opened it: visits recorded,
+// patients added, notes approved, uploads retried. It is a cookie rather than
+// client state so that every server-rendered surface — the sidebar, Home, the
 // patient record — reads the same workspace as the page that changed it.
-
-import type { VisitStatus } from "@/lib/demo-data";
 
 export const workspaceCookie = "scribe-workspace";
 
-/** A consultation recorded in this browser. Its note is drafted on a mock timer. */
+/** A visit recorded in this browser. Its note is written on a mock timer. */
 export type RecordedVisit = {
   id: string;
   patientId: string;
@@ -18,12 +16,12 @@ export type RecordedVisit = {
   stoppedAt: number;
 };
 
-/** A patient added from the capture screen: the only two fields the product asks for. */
+/** A patient added from the picker: the only two things the product asks for. */
 export type AddedPatient = {
   id: string;
   name: string;
-  /** yyyy-mm-dd, formatted per language when read. */
-  dob: string;
+  /** yyyy-mm-dd. */
+  born: string;
 };
 
 export type WorkspaceChanges = {
@@ -31,19 +29,25 @@ export type WorkspaceChanges = {
   patients: AddedPatient[];
   /** Visit id → local clock time it was approved, HH:MM. */
   approved: Record<string, string>;
+  /** Visit id → when a failed upload was retried, in epoch ms. */
+  retried: Record<string, number>;
 };
 
-export const noChanges: WorkspaceChanges = { recorded: [], patients: [], approved: {} };
+export const noChanges: WorkspaceChanges = { recorded: [], patients: [], approved: {}, retried: {} };
+
+const list = <T,>(value: unknown) => (Array.isArray(value) ? (value as T[]) : []);
+const map = <T,>(value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, T>) : {};
 
 export function parseChanges(raw: string | undefined): WorkspaceChanges {
   if (!raw) return noChanges;
   try {
     const value = JSON.parse(raw) as Partial<WorkspaceChanges>;
     return {
-      recorded: Array.isArray(value.recorded) ? value.recorded : [],
-      patients: Array.isArray(value.patients) ? value.patients : [],
-      approved:
-        value.approved && typeof value.approved === "object" ? value.approved : {},
+      recorded: list(value.recorded),
+      patients: list(value.patients),
+      approved: map(value.approved),
+      retried: map(value.retried),
     };
   } catch {
     return noChanges;
@@ -51,25 +55,20 @@ export function parseChanges(raw: string | undefined): WorkspaceChanges {
 }
 
 /**
- * The mock pipeline behind a freshly recorded visit: seconds after the
- * recording stopped at which each stage hands over to the next. Every stage
- * reads "Processing" on the badge; the Activity tab shows which one it is on.
+ * What happens to a recording once it stops, and roughly how long each part
+ * takes. The visit page walks through these one at a time, so the doctor
+ * always knows what they are waiting for.
  */
-const stages: { status: VisitStatus; until: number }[] = [
-  { status: "uploading", until: 3 },
-  { status: "transcribing", until: 7 },
-  { status: "drafting", until: 11 },
-];
+export const processingSteps = [
+  { id: "upload", seconds: 2.5 },
+  { id: "transcribe", seconds: 4 },
+  { id: "note", seconds: 4 },
+  { id: "instructions", seconds: 2.5 },
+] as const;
 
-export function recordedStatus(visit: RecordedVisit, now: number): VisitStatus {
-  const elapsed = (now - visit.stoppedAt) / 1000;
-  return stages.find((stage) => elapsed < stage.until)?.status ?? "draft-ready";
-}
+export type ProcessingStep = (typeof processingSteps)[number]["id"];
 
-/** The moment this visit next changes status, or null once its draft is ready. */
-export function nextStatusChange(visit: RecordedVisit, now: number): number | null {
-  const boundary = stages
-    .map((stage) => visit.stoppedAt + stage.until * 1000)
-    .find((at) => at > now);
-  return boundary ?? null;
-}
+/** From the moment processing starts to the moment the note is ready, in ms. */
+export const processingTime = processingSteps.reduce((total, step) => total + step.seconds, 0) * 1000;
+
+export const readyAt = (since: number) => since + processingTime;

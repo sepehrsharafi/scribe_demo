@@ -1,0 +1,97 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 2634 >>
+stream
+BT /F2 18 Tf 56 780 Td (Laboratory report) Tj ET
+BT /F1 10 Tf 56 758 Td (Reference SCR-0003    Requested by: General practice) Tj ET
+BT /F1 10 Tf 56 744 Td (Collected 19 Sep 2026 08:40    Reported 19 Sep 2026 14:12) Tj ET
+0.85 g 56 712 483 20 re f 0 g
+BT /F2 10 Tf 62 718 Td (Test) Tj ET
+BT /F2 10 Tf 250 718 Td (Result) Tj ET
+BT /F2 10 Tf 330 718 Td (Units) Tj ET
+BT /F2 10 Tf 440 718 Td (Reference range) Tj ET
+BT /F1 10 Tf 62 694 Td (Haemoglobin) Tj ET
+BT /F2 10 Tf 250 694 Td (128) Tj ET
+BT /F1 10 Tf 330 694 Td (g/L) Tj ET
+BT /F1 10 Tf 440 694 Td (115 - 165) Tj ET
+0.8 G 0.5 w 56 688 m 539 688 l S
+BT /F1 10 Tf 62 674 Td (White cell count) Tj ET
+BT /F2 10 Tf 250 674 Td (6.2) Tj ET
+BT /F1 10 Tf 330 674 Td (x10^9/L) Tj ET
+BT /F1 10 Tf 440 674 Td (4.0 - 11.0) Tj ET
+0.8 G 0.5 w 56 668 m 539 668 l S
+BT /F1 10 Tf 62 654 Td (Platelets) Tj ET
+BT /F2 10 Tf 250 654 Td (268) Tj ET
+BT /F1 10 Tf 330 654 Td (x10^9/L) Tj ET
+BT /F1 10 Tf 440 654 Td (150 - 400) Tj ET
+0.8 G 0.5 w 56 648 m 539 648 l S
+BT /F1 10 Tf 62 634 Td (Sodium) Tj ET
+BT /F2 10 Tf 250 634 Td (139) Tj ET
+BT /F1 10 Tf 330 634 Td (mmol/L) Tj ET
+BT /F1 10 Tf 440 634 Td (133 - 146) Tj ET
+0.8 G 0.5 w 56 628 m 539 628 l S
+BT /F1 10 Tf 62 614 Td (Potassium) Tj ET
+BT /F2 10 Tf 250 614 Td (4.3) Tj ET
+BT /F1 10 Tf 330 614 Td (mmol/L) Tj ET
+BT /F1 10 Tf 440 614 Td (3.5 - 5.3) Tj ET
+0.8 G 0.5 w 56 608 m 539 608 l S
+BT /F1 10 Tf 62 594 Td (Creatinine) Tj ET
+BT /F2 10 Tf 250 594 Td (71) Tj ET
+BT /F1 10 Tf 330 594 Td (umol/L) Tj ET
+BT /F1 10 Tf 440 594 Td (45 - 84) Tj ET
+0.8 G 0.5 w 56 588 m 539 588 l S
+BT /F1 10 Tf 62 574 Td (eGFR) Tj ET
+BT /F2 10 Tf 250 574 Td (>90) Tj ET
+BT /F1 10 Tf 330 574 Td (mL/min/1.73m2) Tj ET
+BT /F1 10 Tf 440 574 Td (>60) Tj ET
+0.8 G 0.5 w 56 568 m 539 568 l S
+BT /F1 10 Tf 62 554 Td (ALT) Tj ET
+BT /F2 10 Tf 250 554 Td (18) Tj ET
+BT /F1 10 Tf 330 554 Td (U/L) Tj ET
+BT /F1 10 Tf 440 554 Td (< 33) Tj ET
+0.8 G 0.5 w 56 548 m 539 548 l S
+BT /F1 10 Tf 62 534 Td (Bilirubin) Tj ET
+BT /F2 10 Tf 250 534 Td (9) Tj ET
+BT /F1 10 Tf 330 534 Td (umol/L) Tj ET
+BT /F1 10 Tf 440 534 Td (< 21) Tj ET
+0.8 G 0.5 w 56 528 m 539 528 l S
+BT /F1 10 Tf 62 514 Td (Ferritin) Tj ET
+BT /F2 10 Tf 250 514 Td (42) Tj ET
+BT /F1 10 Tf 330 514 Td (ug/L) Tj ET
+BT /F1 10 Tf 440 514 Td (15 - 150) Tj ET
+0.8 G 0.5 w 56 508 m 539 508 l S
+BT /F2 10 Tf 56 470 Td (Comment) Tj ET
+BT /F1 10 Tf 56 454 Td (Full blood count, renal and liver function within reference ranges.) Tj ET
+BT /F1 10 Tf 56 440 Td (Ferritin in the lower part of the reference range; consider a repeat in three months.) Tj ET
+BT /F1 8 Tf 56 80 Td (Synthetic demo document. Not a real laboratory result.) Tj ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000348 00000 n 
+0000000450 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+3136
+%%EOF

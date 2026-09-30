@@ -12,13 +12,22 @@ import { useI18n } from "@/components/i18n-provider";
 const columns =
   "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_4rem_minmax(0,11rem)_1rem]";
 
-export function PatientList() {
-  const { t, demo } = useI18n();
-  const { getVisitsForPatient, patients } = demo;
+/** One patient as the list shows them. Worked out on the server. */
+export type PatientRow = {
+  id: string;
+  name: string;
+  initials: string;
+  age: number;
+  visits: number;
+  last?: { day: string; reason: string };
+};
+
+export function PatientList({ rows }: { rows: PatientRow[] }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
 
-  const search = query.trim().toLowerCase();
-  const matches = patients.filter((patient) => patient.name.toLowerCase().includes(search));
+  const search = query.trim().toLocaleLowerCase();
+  const matches = rows.filter((patient) => patient.name.toLocaleLowerCase().includes(search));
 
   return (
     <>
@@ -34,7 +43,7 @@ export function PatientList() {
             aria-label={t("Search patient names")}
           />
         </InputGroup>
-        <Eyebrow>{t("{shown} of {total}", { shown: matches.length, total: patients.length })}</Eyebrow>
+        <Eyebrow>{t("{shown} of {total}", { shown: matches.length, total: rows.length })}</Eyebrow>
       </div>
 
       {matches.length ? (
@@ -48,8 +57,7 @@ export function PatientList() {
           </RecordHead>
 
           {matches.map((patient, index) => {
-            const history = getVisitsForPatient(patient.id);
-            const last = history[0];
+            const { last } = patient;
             return (
               <RecordRow key={patient.id} href={`/patients/${patient.id}`} className={columns}>
                 <RowIndex index={index} />
@@ -66,14 +74,14 @@ export function PatientList() {
                     </>
                   }
                   // On a phone the last-seen column is hidden, so it rides under the name.
-                  secondary={last ? `${last.date} · ${last.reason}` : t("No visits")}
+                  secondary={last ? `${last.day} · ${last.reason}` : t("No visits")}
                   secondaryClassName="sm:hidden"
                 />
-                <span className="hidden text-end font-mono text-xs tabular-nums sm:block">{history.length}</span>
+                <span className="hidden text-end font-mono text-xs tabular-nums sm:block">{patient.visits}</span>
                 <Cell
                   className="hidden sm:grid"
                   align="end"
-                  primary={last ? last.date : "—"}
+                  primary={last ? last.day : "—"}
                   secondary={last ? last.reason : t("No visits")}
                 />
                 <RowChevron />

@@ -12,6 +12,12 @@
       "name": "scribe_demo-running",
       "url": "http://localhost:3000",
       "port": 3000
+    },
+    {
+      "name": "scribe_demo-build",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "start", "-p", "3100"],
+      "port": 3100
     }
   ]
 }

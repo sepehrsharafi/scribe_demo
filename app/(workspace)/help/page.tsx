@@ -20,26 +20,26 @@ import { getI18n } from "@/lib/i18n/server";
 const topics = [
   {
     icon: RiMicLine,
-    title: "Recording a visit",
-    copy: "Consent, microphone checks, pausing, and what happens if the browser closes.",
+    title: "Starting a visit",
+    copy: "Pick the patient and press Start once they agree to be recorded. Attach files on the Context tab before or during the visit.",
   },
   {
     icon: RiSparklingLine,
-    title: "Reviewing a draft",
-    copy: "Edit the text directly, or ask for a revision scoped to one section.",
+    title: "Reviewing the note",
+    copy: "The note and the patient’s instructions are documents you edit like any text, headings included. Highlighted phrases need a check.",
   },
   {
     icon: RiVerifiedBadgeLine,
-    title: "Approving and addenda",
-    copy: "What locking means, how versions are kept, and how to correct an approved note.",
+    title: "Approving",
+    copy: "Approving signs off the note and the instructions together. Both stay editable; a later change is flagged until you approve it.",
   },
 ];
 
 const faqs = [
   {
-    question: "Where do I find a patient's notes?",
+    question: "What are the four tabs on a visit?",
     answer:
-      "On the consultation they came from. Open a patient to see every consultation in one list, then open a consultation for its note, its transcript and its processing history — all three are tabs on the same page.",
+      "Context is what to know going in — a one-line summary, each problem on the record and the plan for the visit — with any attached files. Note is the clinical record. Instructions is the same plan in plain words for the patient to take home. Transcript is the conversation it all came from, turn by turn.",
   },
   {
     question: "What happens if the browser closes during a visit?",
@@ -54,12 +54,17 @@ const faqs = [
   {
     question: "Can an approved note be changed?",
     answer:
-      "An approved note is read-only. Any later correction is stored as a separate addendum, so the original record and the full version chain behind it stay intact.",
+      "Yes. Approving signs a note off; it does not lock it. Change the note or the instructions at any time — the visit shows that they changed after approval, and one click approves the changes.",
   },
   {
-    question: "How long does a draft take to arrive?",
+    question: "What happens if I switch tabs while recording?",
     answer:
-      "Roughly proportional to the length of the recording. The visit shows its real state the whole time, and you can leave the page and come back without losing anything.",
+      "In Chrome and Edge, pressing Start floats the recording in a small window that stays on top of other tabs and apps, with pause and the way back. Close it and the recording waits in the corner of Scribe instead; Pop out brings the window back. Elsewhere it carries on in the corner of Scribe.",
+  },
+  {
+    question: "How long does a note take to arrive?",
+    answer:
+      "Seconds. The visit shows each step as it happens — securing the audio, transcribing, writing the note, writing the instructions — and you can leave the page and come back without losing anything.",
   },
 ];
 
@@ -71,7 +76,7 @@ export default async function Help() {
       <PageHead
         eyebrow={t("Support")}
         title={t("How can we help?")}
-        description={t("Short answers for capturing, recovering, reviewing, and approving a consultation.")}
+        description={t("Short answers for starting, recovering, reviewing, and approving a visit.")}
       />
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -1,41 +1,58 @@
 import { notFound } from "next/navigation";
-import { demo as english } from "@/lib/demo-data";
 import { getI18n } from "@/lib/i18n/server";
-import { Consultation } from "@/components/consultation";
+import { formatDuration } from "@/lib/utils";
+import { ContextPanel } from "@/components/context-panel";
+import { PageTransition } from "@/components/page-layout";
+import { Transcript } from "@/components/transcript";
+import { VisitIdentity } from "@/components/visit-identity";
+import { VisitWorkspace } from "@/components/visit-workspace";
 
-export function generateStaticParams() {
-  return english("en").visits.map((visit) => ({ visitId: visit.id }));
-}
-
-export default async function Page({ params }: PageProps<"/visits/[visitId]">) {
+/**
+ * A filed visit. Everything that can be is rendered here, on the server —
+ * who it was with, the record going in, the transcript — and handed to the
+ * one client part that has to hold state: the note being reviewed.
+ */
+export default async function VisitPage({ params }: PageProps<"/visits/[visitId]">) {
   const { visitId } = await params;
-  const { demo } = await getI18n();
-  const { approvedAt, getNote, getPatientForVisit, getTranscript, getVersions, getVisit } = demo;
-  const visit = getVisit(visitId);
-  const patient = getPatientForVisit(visitId);
+  const { f, demo, now } = await getI18n();
+  const visit = demo.getVisit(visitId);
+  const patient = demo.getPatient(visit?.patientId);
 
   if (!visit || !patient) notFound();
 
-  const note = getNote(visitId);
+  const note = demo.getNote(visitId);
 
   return (
-    <Consultation
-      // A recording's draft arriving swaps the page for one with a note on it.
-      key={`${visitId}|${note ? "note" : "none"}`}
-      data={{
-        visitId,
-        patient,
-        reason: visit.reason,
-        dateLong: visit.dateLong,
-        duration: visit.manual ? undefined : visit.duration,
-        manual: visit.manual,
-        status: visit.status,
-        failureReason: visit.failureReason,
-        note,
-        transcript: getTranscript(visitId),
-        versions: note ? getVersions(visitId) : [],
-        approvedAt: approvedAt[visitId],
-      }}
-    />
+    <PageTransition>
+      <VisitWorkspace
+        visit={{
+          id: visit.id,
+          status: visit.status,
+          since: visit.since,
+          failure: visit.failure,
+          approvedAt: visit.approvedAt,
+          recorded: visit.seconds > 0,
+          patientName: patient.name,
+          firstName: patient.name.split(" ")[0],
+          date: f.date(visit.day),
+          seededFiles: demo.getContext(visitId).files?.length ?? 0,
+        }}
+        note={note}
+        now={now}
+        doctor={demo.doctor.name}
+        identity={<VisitIdentity patientId={patient.id} visit={visit} />}
+        context={
+          <ContextPanel
+            patientId={patient.id}
+            visitId={visit.id}
+            day={visit.day}
+            extrasKey={visit.id}
+          />
+        }
+        transcript={
+          note ? <Transcript lines={demo.getTranscript(visitId)} length={formatDuration(visit.seconds)} /> : null
+        }
+      />
+    </PageTransition>
   );
 }

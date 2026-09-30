@@ -1,5 +1,18 @@
-import type { ReactNode } from "react";
+import { ViewTransition, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Arriving on a page settles it in; leaving fades it out quickly, so the old
+ * page never competes with the new one. The sidebar is outside every page and
+ * does not move. Browsers without view transitions simply swap.
+ */
+export function PageTransition({ children }: { children: ReactNode }) {
+  return (
+    <ViewTransition enter="page-in" exit="page-out" default="none">
+      {children}
+    </ViewTransition>
+  );
+}
 
 /** The measure every page is set to. */
 export function Page({
@@ -10,9 +23,9 @@ export function Page({
   className?: string;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-7xl px-6 py-8 lg:px-10", className)}>
-      {children}
-    </div>
+    <PageTransition>
+      <div className={cn("mx-auto w-full max-w-7xl px-6 py-8 lg:px-10", className)}>{children}</div>
+    </PageTransition>
   );
 }
 

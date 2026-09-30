@@ -6,6 +6,7 @@ import { RiExpandDiagonalLine, RiPauseFill, RiPlayFill } from "@remixicon/react"
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Elapsed, useActiveRecording } from "@/components/active-recording";
+import { PopOutButton, useRecordingWindow } from "@/components/recording-window";
 import { useI18n } from "@/components/i18n-provider";
 
 /* Four bars on the sign-in screen's wave, offset so they never move together. */
@@ -13,8 +14,9 @@ const bars = ["0s", "-0.4s", "-0.8s", "-0.2s"];
 
 /**
  * The recording, minimised: who it is for, how long it has run, pause, and the
- * way back. It appears whenever a recording is running and the doctor is
- * anywhere but the recording screen.
+ * way back. It appears when a recording is running, the doctor is anywhere
+ * but the visit being recorded, and the recording is not already floating in
+ * its own window — there is only ever one of the two.
  *
  * It stays mounted for as long as the recording exists and only its
  * visibility changes, so showing and hiding is one CSS transition of opacity,
@@ -23,18 +25,14 @@ const bars = ["0s", "-0.4s", "-0.8s", "-0.2s"];
  */
 export function RecordingDock() {
   const { recording, pause, resume } = useActiveRecording();
+  const { floating } = useRecordingWindow();
   const pathname = usePathname();
   const { t } = useI18n();
 
   if (!recording) return null;
 
-  const open = !pathname.startsWith("/new");
+  const open = !pathname.startsWith("/new") && !floating;
   const live = recording.phase === "recording";
-  const status = {
-    recording: t("Recording"),
-    paused: t("Paused"),
-    stopped: t("Needs a patient"),
-  }[recording.phase];
 
   return (
     <div
@@ -67,36 +65,33 @@ export function RecordingDock() {
         </span>
 
         <span className="min-w-0 flex-1">
-          <strong className="block truncate text-sm font-semibold">
-            {recording.patient?.name ?? t("No patient attached yet")}
-          </strong>
+          <strong className="block truncate text-sm font-semibold">{recording.patient.name}</strong>
           <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground tabular-nums">
             <span
               className={cn(
                 "size-2 shrink-0 rounded-full",
-                live ? "animate-pulse bg-destructive" : recording.phase === "stopped" ? "bg-warning" : "bg-muted-foreground",
+                live ? "animate-pulse bg-destructive" : "bg-muted-foreground",
               )}
             />
-            {status}
+            {live ? t("Recording") : t("Paused")}
             <span aria-hidden="true">·</span>
             <Elapsed recording={recording} className="text-foreground" />
           </span>
         </span>
 
-        {recording.phase !== "stopped" ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={live ? pause : resume}
-            aria-label={live ? t("Pause") : t("Resume")}
-            title={live ? t("Pause") : t("Resume")}
-          >
-            {live ? <RiPauseFill /> : <RiPlayFill />}
-          </Button>
-        ) : null}
+        <PopOutButton />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={live ? pause : resume}
+          aria-label={live ? t("Pause") : t("Resume")}
+          title={live ? t("Pause") : t("Resume")}
+        >
+          {live ? <RiPauseFill /> : <RiPlayFill />}
+        </Button>
         <Button
           size="icon"
-          render={<Link href="/new" />}
+          render={<Link href={`/new?patient=${recording.patient.id}`} />}
           aria-label={t("Back to the recording")}
           title={t("Back to the recording")}
         >

@@ -3,7 +3,7 @@ import { getI18n } from "@/lib/i18n/server";
 import { SettingsForm } from "./settings-form";
 
 export default async function Settings() {
-  const { t } = await getI18n();
+  const { t, demo } = await getI18n();
 
   return (
     <Page className="space-y-8">
@@ -12,7 +12,7 @@ export default async function Settings() {
         title={t("Settings")}
         description={t("Your demo profile, capture behaviour, and note review preferences.")}
       />
-      <SettingsForm />
+      <SettingsForm doctor={demo.doctor} recoveredSeconds={demo.recovery.seconds} />
     </Page>
   );
 }

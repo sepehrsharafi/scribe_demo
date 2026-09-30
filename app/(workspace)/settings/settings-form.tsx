@@ -35,6 +35,17 @@ import { Eyebrow } from "@/components/page-layout";
 import { cn, formatDuration } from "@/lib/utils";
 import { useI18n } from "@/components/i18n-provider";
 
+/*
+ * Beside the sections on a desktop, the tabs are a vertical list. On a phone
+ * that list would push every section below the fold, so it turns into the
+ * strip the visit uses: one scrolling row, the open tab underlined. The
+ * shadcn tabs style themselves by orientation, hence the overrides.
+ */
+const phoneStrip =
+  "max-md:-mx-6 max-md:w-auto max-md:flex-row! max-md:justify-start max-md:gap-5 max-md:overflow-x-auto max-md:border-b max-md:px-6 max-md:[scrollbar-width:none]";
+const phoneTab =
+  "max-md:w-auto! max-md:flex-none max-md:px-0.5! max-md:py-3! max-md:after:inset-x-0! max-md:after:top-auto! max-md:after:-bottom-px! max-md:after:h-0.5! max-md:after:w-auto!";
+
 const tabs = [
   { id: "profile", label: "Profile", icon: RiUserLine },
   { id: "recording", label: "Recording", icon: RiMicLine },
@@ -167,9 +178,14 @@ function ResetDemo() {
   );
 }
 
-export function SettingsForm() {
-  const { t, demo } = useI18n();
-  const { doctor } = demo;
+export function SettingsForm({
+  doctor,
+  recoveredSeconds,
+}: {
+  doctor: { name: string; specialty: string; email: string; registration: string };
+  recoveredSeconds: number;
+}) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status>("clean");
   const [prefs, setPrefs] = useState(defaults);
 
@@ -184,10 +200,10 @@ export function SettingsForm() {
   }
 
   return (
-    <Tabs defaultValue="profile" orientation="vertical" className="gap-8 max-md:flex-col">
-      <TabsList variant="line" className="md:w-52 md:shrink-0">
+    <Tabs defaultValue="profile" orientation="vertical" className="gap-8 max-md:flex-col max-md:gap-6">
+      <TabsList variant="line" className={cn("md:w-52 md:shrink-0", phoneStrip)}>
         {tabs.map(({ id, label, icon: Icon }) => (
-          <TabsTrigger key={id} value={id}>
+          <TabsTrigger key={id} value={id} className={phoneTab}>
             <Icon data-icon="inline-start" />
             {t(label)}
           </TabsTrigger>
@@ -365,7 +381,7 @@ export function SettingsForm() {
                 <FieldTitle>{t("Recovered demo audio")}</FieldTitle>
                 <FieldDescription>
                   {t("One synthetic recording · {duration}", {
-                    duration: formatDuration(demo.recovery.seconds),
+                    duration: formatDuration(recoveredSeconds),
                   })}
                 </FieldDescription>
               </FieldContent>

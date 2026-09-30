@@ -48,6 +48,14 @@
   --warning: oklch(0.5 0.11 76);
   --warning-foreground: oklch(0.985 0 0);
   --warning-muted: oklch(0.962 0.03 86);
+
+  /* The inverse surface: ink in the light theme, paper in the dark one. It is
+     what the app says things on — its toasts — so they
+     read as messages, not as more page. Tinted with the brand hue. */
+  --inverse: oklch(0.2 0.018 292.8);
+  --inverse-foreground: oklch(0.985 0.004 292.8);
+  --inverse-muted: oklch(0.78 0.02 292.8);
+  --inverse-signal: oklch(0.8 0.12 292.8);
 }
 
 .dark {
@@ -86,6 +94,11 @@
   --warning: oklch(0.78 0.13 82);
   --warning-foreground: oklch(0.21 0.03 82);
   --warning-muted: oklch(0.32 0.05 82);
+
+  --inverse: oklch(0.965 0.01 292.8);
+  --inverse-foreground: oklch(0.18 0.015 292.8);
+  --inverse-muted: oklch(0.44 0.03 292.8);
+  --inverse-signal: oklch(0.5 0.2 292.8);
 }
 
 @theme inline {
@@ -123,6 +136,10 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-muted: var(--warning-muted);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-signal: var(--inverse-signal);
 
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
@@ -145,6 +162,10 @@
   --text-sm: 1rem;
   --text-sm--line-height: 1.5;
 
+  /* One curve for anything that travels — the sidebar, the top bar, the
+     recording card: quick out of the gate, a long soft landing. */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -160,9 +181,15 @@
   }
 
   /* Reserve the scrollbar's track on every page, so a short page and a long
-     one set their content to exactly the same width. */
+     one set their content to exactly the same width. On a phone the whole
+     scale steps down one notch: 16px text becomes 15px and everything sized
+     in rem follows, so the proportions stay those of the desktop. */
   html {
     scrollbar-gutter: stable;
+
+    @media (width < 40rem) {
+      font-size: 93.75%;
+    }
   }
 
   body {
@@ -211,5 +238,106 @@ body:has([data-recording-dock][data-open]) [data-sonner-toaster][data-y-position
   }
   50% {
     transform: scaleY(1);
+  }
+}
+
+/* A processing step filling, a file arriving, the live step breathing. All
+   transform and opacity, so the compositor runs them without layout or paint. */
+@keyframes scribe-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes scribe-upload {
+  0% {
+    transform: scaleX(0);
+  }
+  75% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* The time a toast has left, as a hairline that runs out. */
+@keyframes scribe-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes scribe-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/*
+ * View transitions. What leaves goes quickly, so it never competes with what
+ * arrives; what arrives settles in from a few pixels below. Everything not
+ * named — the sidebar, the dock — swaps at once and never moves. Browsers
+ * without the API simply swap.
+ */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root) {
+  display: none;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(.page-out),
+::view-transition-old(.skeleton-out),
+::view-transition-old(.tab-out) {
+  animation: 140ms ease-out both scribe-leave;
+}
+
+::view-transition-new(.page-in) {
+  animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both scribe-arrive;
+}
+
+::view-transition-new(.tab-in) {
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both scribe-arrive;
+}
+
+@keyframes scribe-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scribe-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
