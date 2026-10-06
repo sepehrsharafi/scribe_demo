@@ -42,14 +42,15 @@ export default async function WorkspaceLayout({ children }: LayoutProps<"/">) {
   const sidebarOpen = (await cookies()).get("sidebar_state")?.value !== "false";
 
   return (
-    <ActiveRecordingProvider>
-      <RecordingWindowProvider>
-        <VisitExtrasProvider>
+    // The visit extras wrap the recording: finishing one hands its files on to the new visit.
+    <VisitExtrasProvider>
+      <ActiveRecordingProvider>
+        <RecordingWindowProvider>
           <NewVisitProvider patients={patientOptions(demo, f)}>
             <SidebarProvider defaultOpen={sidebarOpen}>
               <AppSidebar />
               {/* Sticky strips sit under the top bar when there is one. */}
-              <SidebarInset className="min-w-0 [--sticky-top:0px] has-data-[workspace-bar=shown]:[--sticky-top:3.5rem]">
+              <SidebarInset className="min-w-0 [--sticky-top:3.5rem] md:peer-data-[state=expanded]:[--sticky-top:0px]">
                 <WorkspaceBar />
                 {children}
               </SidebarInset>
@@ -57,8 +58,8 @@ export default async function WorkspaceLayout({ children }: LayoutProps<"/">) {
               <RecordingDock />
             </SidebarProvider>
           </NewVisitProvider>
-        </VisitExtrasProvider>
-      </RecordingWindowProvider>
-    </ActiveRecordingProvider>
+        </RecordingWindowProvider>
+      </ActiveRecordingProvider>
+    </VisitExtrasProvider>
   );
 }

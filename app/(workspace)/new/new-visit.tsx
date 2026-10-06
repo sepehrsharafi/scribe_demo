@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   RiCheckDoubleLine,
   RiDeleteBinLine,
@@ -12,27 +11,20 @@ import {
   RiStopFill,
   RiVoiceprintLine,
 } from "@remixicon/react";
-import { useState, useTransition, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { noteOrder, sectionLabels, type Note as NoteRecord, type TextSectionId } from "@/lib/demo-data";
-import { saveRecording } from "@/lib/actions/workspace";
 import { demoToday } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn, formatDuration } from "@/lib/utils";
-import {
-  Elapsed,
-  elapsedSeconds,
-  useActiveRecording,
-  type LiveRecording,
-} from "@/components/active-recording";
+import { Elapsed, useActiveRecording } from "@/components/active-recording";
 import { InstructionsSheet } from "@/components/instructions-sheet";
 import { PopOutButton, useRecordingWindow } from "@/components/recording-window";
 import { Note } from "@/components/note";
 import { useWriteUp } from "@/components/use-write-up";
 import { handoutDocument, noteDocument } from "@/components/write-up-document";
 import { EditorToolbar } from "@/components/write-up-editor";
-import { useVisitExtrasHandover } from "@/components/visit-extras";
 import { VisitFrame } from "@/components/visit-frame";
 import { VisitTabs, type VisitTab } from "@/components/visit-tabs";
 import { useI18n } from "@/components/i18n-provider";
@@ -47,10 +39,6 @@ type Shared = {
 
 /* Deterministic bar offsets — random values would break hydration. */
 const bars = Array.from({ length: 14 }, (_, index) => `${((index * 37) % 9) * -0.13}s`);
-
-/** HH:MM, some seconds ago. */
-const clockAt = (secondsAgo: number) =>
-  new Date(Date.now() - secondsAgo * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 function Meter({ live, className }: { live: boolean; className?: string }) {
   return (
@@ -73,10 +61,10 @@ function Meter({ live, className }: { live: boolean; className?: string }) {
 function Waiting({ icon: Icon, title, children }: { icon: typeof RiMicLine; title: string; children: ReactNode }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center py-12 text-center">
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+      <span className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
         <Icon className="size-6" />
       </span>
-      <h2 className="mt-4 font-heading text-lg font-semibold tracking-tight">{title}</h2>
+      <h2 className="mt-4 text-base font-semibold">{title}</h2>
       <div className="mt-2 text-sm leading-relaxed text-muted-foreground">{children}</div>
     </div>
   );
@@ -91,18 +79,11 @@ function NoteToCome({ onWrite }: { onWrite?: () => void }) {
       <p className="text-sm text-muted-foreground">
         {t("Written from the conversation when you finish recording, section by section.")}
       </p>
-      <ol className="mt-5 divide-y border-y">
-        {noteOrder.map((id, index) => (
-          <li key={id} className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 py-4">
-            <span className="font-mono text-2xs text-muted-foreground tabular-nums">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <span className="flex items-center gap-4">
-              <span className="font-heading text-base font-semibold tracking-tight text-muted-foreground">
-                {t(sectionLabels[id])}
-              </span>
-              <span aria-hidden="true" className="h-2 flex-1 rounded-full bg-muted" />
-            </span>
+      <ol className="mt-6 grid gap-6">
+        {noteOrder.map((id) => (
+          <li key={id} className="flex items-center gap-4">
+            <span className="text-base font-semibold text-muted-foreground">{t(sectionLabels[id])}</span>
+            <span aria-hidden="true" className="h-2 flex-1 rounded-full bg-muted" />
           </li>
         ))}
       </ol>
@@ -155,33 +136,30 @@ function WriteUp({ patient, identity, context, onBack }: Shared & { onBack: () =
   const written = writeUp.facts.written;
 
   const actions = writeUp.approved ? (
-    <>
-      <span className="inline-flex h-10 items-center gap-2 rounded-full bg-primary/10 px-4 text-sm font-medium text-primary dark:bg-primary/20">
-        <RiCheckDoubleLine className="size-4" />
-        {t("Approved")}
-      </span>
-      <span className="text-xs text-muted-foreground">{t("Hand-written visits stay on this device in the demo.")}</span>
-    </>
+    <span
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary"
+      title={t("Hand-written visits stay on this device in the demo.")}
+    >
+      <RiCheckDoubleLine className="size-4" />
+      {t("Approved")}
+    </span>
   ) : (
     <>
-      <span className="flex items-center gap-2">
-        <Button variant="ghost" size="lg" onClick={onBack}>
-          {t("Record instead")}
-        </Button>
-        <Button
-          size="lg"
-          disabled={!written}
-          onClick={() => {
-            writeUp.approve();
-            toast.success(t("Note and instructions approved"));
-          }}
-        >
-          {t("Approve")}
-        </Button>
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {written ? t("Signs off the note and the instructions together.") : t("Write at least one section to approve.")}
-      </span>
+      {written ? null : <span className="text-xs text-muted-foreground">{t("Write at least one section to approve.")}</span>}
+      <Button variant="ghost" size="lg" onClick={onBack}>
+        {t("Record instead")}
+      </Button>
+      <Button
+        size="lg"
+        disabled={!written}
+        title={t("Signs off the note and the instructions together.")}
+        onClick={() => {
+          writeUp.approve();
+          toast.success(t("Note and instructions approved"));
+        }}
+      >
+        {t("Approve")}
+      </Button>
     </>
   );
 
@@ -201,7 +179,7 @@ function WriteUp({ patient, identity, context, onBack }: Shared & { onBack: () =
         panels={{
           context,
           transcript: null,
-          note: <Note writeUp={writeUp} doctor={t("You")} manual />,
+          note: <Note writeUp={writeUp} manual />,
           instructions: <InstructionsSheet writeUp={writeUp} patientName={patient.name} date={f.date(demoToday)} />,
         }}
       />
@@ -211,7 +189,7 @@ function WriteUp({ patient, identity, context, onBack }: Shared & { onBack: () =
 
 /**
  * Starting a visit: the patient is already chosen, so one press starts the
- * recording. Consent is asked in the room, not in a checkbox; the line under
+ * recording. Consent is asked in the room, not in a checkbox; the line beside
  * the button says that pressing it confirms it was given.
  * The tabs are there from the first moment — context to add, a note and
  * instructions to come — and the recording runs in the header, so any of them
@@ -222,26 +200,22 @@ function WriteUp({ patient, identity, context, onBack }: Shared & { onBack: () =
  */
 export function NewVisit({ patient, identity, context, recovered }: Shared & { recovered: number }) {
   const { t } = useI18n();
-  const router = useRouter();
   const controls = useActiveRecording();
   const recordingWindow = useRecordingWindow();
-  const handover = useVisitExtrasHandover();
   const [tab, setTab] = useState<VisitTab>("context");
   const [writing, setWriting] = useState(false);
   // Throwing a recording away takes two presses, never one.
   const [discarding, setDiscarding] = useState(false);
-  // The recording as it was handed to the server, shown while it saves: the
-  // live one is cleared at once so the corner card never outlives it.
-  const [filed, setFiled] = useState<LiveRecording | null>(null);
-  const [saving, startSaving] = useTransition();
-  const extrasKey = `new:${patient.id}`;
 
   const live = controls.recording;
+  // The recording as it was handed to the server — from here or from the
+  // floating window — shown while it saves and its visit opens.
+  const filed = controls.filed?.patient.id === patient.id ? controls.filed : null;
 
   if (live && live.patient.id !== patient.id) {
     return (
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {t("{name} is still being recorded", { name: live.patient.name })}
         </h1>
         <p className="mt-2 text-muted-foreground">
@@ -261,33 +235,23 @@ export function NewVisit({ patient, identity, context, recovered }: Shared & { r
   const recording = live ?? filed;
   const running = recording?.phase === "recording" && !filed;
 
-  function finish() {
-    if (!live) return;
-    const now = Date.now();
-    const seconds = elapsedSeconds(live, now);
-    const id = `r${now.toString(36)}`;
-    setFiled({ ...live, phase: "paused", banked: seconds * 1000, since: null });
-    controls.clear();
-    // Whatever was attached while recording follows the visit to its new address.
-    handover.move(extrasKey, id);
-    startSaving(() =>
-      saveRecording({ id, patientId: patient.id, seconds, time: clockAt(seconds), stoppedAt: now }),
-    );
-  }
-
-  function discard() {
-    controls.clear();
-    handover.clear(extrasKey);
-    toast(t("Recording discarded"));
-    router.push("/");
-  }
+  const status = filed
+    ? t("Filing the visit — the note is written next.")
+    : running
+      ? recordingWindow.floating
+        ? t("Recording. It stays on top in its own window, wherever you go.")
+        : t("Recording. You can leave this page; it carries on in the corner.")
+      : t("Paused.");
 
   const actions = !recording ? (
     <>
-      {/* As tall as the recording bar that takes its place, so starting moves nothing. */}
+      <p className="max-w-60 text-2xs leading-snug text-muted-foreground sm:text-end">
+        {recovered
+          ? t("{duration} was restored from this device.", { duration: formatDuration(recovered) })
+          : t("Record only with the patient's consent. Starting confirms you have it.")}
+      </p>
       <Button
         size="lg"
-        className="h-11.5 px-5 has-data-[icon=inline-start]:ps-4"
         onClick={() => {
           controls.start({ id: patient.id, name: patient.name }, recovered);
           // The click is what lets the browser open the window that keeps the recording in sight.
@@ -297,65 +261,45 @@ export function NewVisit({ patient, identity, context, recovered }: Shared & { r
         <RiMicLine data-icon="inline-start" />
         {recovered ? t("Resume recording") : t("Start recording")}
       </Button>
-      {/* Two lines on a phone, like the recording's own line that replaces it. */}
-      <span className="text-xs text-muted-foreground max-sm:min-h-[2lh]">
-        {recovered
-          ? t("{duration} was restored from this device.", { duration: formatDuration(recovered) })
-          : t("Record only with the patient's consent. Starting confirms you have it.")}
-      </span>
     </>
   ) : (
     <>
-      <span
-        className={cn(
-          "flex animate-in items-center gap-2 rounded-full border bg-background p-1 ps-4 transition-colors duration-200 fade-in-0 zoom-in-95 motion-reduce:animate-none",
-          running && "border-destructive/30",
-        )}
-      >
+      {filed ? null : (
+        <Button
+          variant={discarding ? "destructive" : "ghost"}
+          onClick={() => (discarding ? controls.discard() : setDiscarding(true))}
+          onBlur={() => setDiscarding(false)}
+        >
+          <RiDeleteBinLine data-icon="inline-start" />
+          {discarding ? t("Discard this recording?") : t("Discard")}
+        </Button>
+      )}
+      {/* As tall as the Start button it replaces, so starting moves nothing. */}
+      <span className="flex h-10 items-center gap-1 rounded-lg border bg-background ps-3 pe-1">
         <span
           aria-hidden="true"
-          className={cn("size-2.5 shrink-0 rounded-full", running ? "animate-pulse bg-destructive" : "bg-muted-foreground")}
+          className={cn("me-1 size-2.5 shrink-0 rounded-full", running ? "animate-pulse bg-destructive" : "bg-muted-foreground")}
         />
-        <Elapsed recording={recording} className="w-14 font-mono text-base font-medium tabular-nums" />
-        <Meter live={running} className="me-1 hidden sm:flex" />
-        {filed ? null : <PopOutButton />}
+        <Elapsed recording={recording} className="w-12 text-sm font-medium tabular-nums" />
+        <Meter live={running} className="mx-1 hidden sm:flex" />
+        {filed ? null : <PopOutButton className="size-8" />}
         <Button
           variant="ghost"
-          size="icon"
-          disabled={saving || Boolean(filed)}
+          size="icon-sm"
+          disabled={Boolean(filed)}
           onClick={running ? controls.pause : controls.resume}
           aria-label={running ? t("Pause") : t("Resume")}
           title={running ? t("Pause") : t("Resume")}
         >
           {running ? <RiPauseFill /> : <RiPlayFill />}
         </Button>
-        <Button disabled={saving || Boolean(filed)} onClick={finish}>
+        <Button size="sm" disabled={Boolean(filed)} onClick={controls.finish}>
           {filed ? <Spinner data-icon="inline-start" /> : <RiStopFill data-icon="inline-start" />}
           {filed ? t("Saving") : t("Finish")}
         </Button>
-      </span>
-      <span className="flex items-center gap-3 text-xs text-muted-foreground max-sm:min-h-[2lh]" aria-live="polite">
-        {filed
-          ? t("Filing the visit — the note is written next.")
-          : running
-            ? recordingWindow.floating
-              ? t("Recording. It stays on top in its own window, wherever you go.")
-              : t("Recording. You can leave this page; it carries on in the corner.")
-            : t("Paused.")}
-        {filed ? null : (
-          <button
-            type="button"
-            onClick={() => (discarding ? discard() : setDiscarding(true))}
-            onBlur={() => setDiscarding(false)}
-            className={cn(
-              "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
-              discarding ? "text-destructive" : "text-muted-foreground",
-            )}
-          >
-            <RiDeleteBinLine className="size-3.5" />
-            {discarding ? t("Discard this recording?") : t("Discard")}
-          </button>
-        )}
+        <span className="sr-only" aria-live="polite">
+          {status}
+        </span>
       </span>
     </>
   );

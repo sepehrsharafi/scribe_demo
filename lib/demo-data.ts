@@ -5,6 +5,7 @@
 // and every status word lives with the component that says it.
 
 import type { Locale } from "@/lib/i18n/locales";
+import { arabic } from "@/lib/demo-data-ar";
 import { farsi } from "@/lib/demo-data-fa";
 import { demoToday } from "@/lib/format";
 import { noChanges, readyAt, type WorkspaceChanges } from "@/lib/workspace";
@@ -18,6 +19,8 @@ export type Patient = {
   born: string;
   /** yyyy-mm. */
   registered: string;
+  /** Where their instructions are emailed. Not everyone has given one. */
+  email?: string;
   /** The standing clinical picture, kept consistent with the notes below. */
   record: ClinicalEntry[];
 };
@@ -33,11 +36,31 @@ export type ClinicalEntry = {
   endedVisitId?: string;
 };
 
+/** What kind of visit it was, in the order the doctor picks from. */
+export const visitTypes = ["first", "follow-up", "new-complaint", "results-review", "treatment-check"] as const;
+
+export type VisitType = (typeof visitTypes)[number];
+
+/** Visit type names, in English. Screens render them through `t()`. */
+export const visitTypeLabels: Record<VisitType, string> = {
+  first: "First visit",
+  "follow-up": "Follow-up",
+  "new-complaint": "New complaint",
+  "results-review": "Results review",
+  "treatment-check": "Treatment check",
+};
+
 export type Visit = {
   id: string;
   patientId: string;
   /** Empty until the note has been written — Scribe takes it from the conversation. */
   reason: string;
+  /**
+   * Scribe takes it from the conversation too, and the doctor can overrule it.
+   * Absent for a visit just recorded: `getVisitType` then says first or
+   * follow-up by whether the patient has been seen before.
+   */
+  type?: VisitType;
   /** yyyy-mm-dd. */
   day: string;
   /** HH:MM. */
@@ -47,10 +70,20 @@ export type Visit = {
   status: VisitStatus;
   /** HH:MM on the day of the visit. */
   approvedAt?: string;
+  /** When the patient was last emailed their instructions, and where to. */
+  emailed?: EmailedInstructions;
   /** Why processing stopped. */
   failure?: string;
   /** When processing began, in epoch ms. Only visits processed in this browser have one. */
   since?: number;
+};
+
+export type EmailedInstructions = {
+  to: string;
+  /** yyyy-mm-dd. */
+  day: string;
+  /** HH:MM. */
+  time: string;
 };
 
 /** Every section a note can have, in the order it is read. */
@@ -148,6 +181,8 @@ export type TranscriptLine = {
   speaker: Speaker;
   time: string;
   text: string;
+  /** Talks about an earlier visit. A new recording reuses this transcript for someone else and leaves it out. */
+  earlier?: boolean;
 };
 
 /** A file attached to a visit: a letter, a scan, a result. */
@@ -226,6 +261,7 @@ const patients: Patient[] = [
     name: "Maya Thompson",
     born: "1988-05-14",
     registered: "2021-03",
+    email: "maya.thompson@example.com",
     record: [
       {
         id: "p1.1",
@@ -255,6 +291,7 @@ const patients: Patient[] = [
     name: "Jon Bell",
     born: "1971-11-02",
     registered: "2016-08",
+    email: "jon.bell71@example.net",
     record: [
       { id: "p2.1", kind: "problem", text: "Hypertension, controlled", visitId: "v2" },
       { id: "p2.2", kind: "medication", text: "Amlodipine 5 mg once daily", visitId: "v2" },
@@ -265,6 +302,7 @@ const patients: Patient[] = [
     name: "Elena Marquez",
     born: "1995-01-29",
     registered: "2024-01",
+    email: "elena.marquez@example.org",
     record: [
       { id: "p3.1", kind: "problem", text: "Migraine with aura", visitId: "v3" },
       {
@@ -285,6 +323,7 @@ const patients: Patient[] = [
   {
     id: "p4",
     name: "Arthur Wright",
+    // No email on file: his instructions go home on paper, until the doctor adds one.
     born: "1948-07-07",
     registered: "2009-06",
     record: [
@@ -310,6 +349,7 @@ const patients: Patient[] = [
     name: "Nadia Okonkwo",
     born: "1990-03-23",
     registered: "2022-11",
+    email: "nadia.okonkwo@example.com",
     record: [
       { id: "p5.1", kind: "problem", text: "Postnatal, delivered Aug 2026" },
       { id: "p5.2", kind: "allergy", text: "Latex" },
@@ -320,6 +360,7 @@ const patients: Patient[] = [
     name: "Tomas Lindqvist",
     born: "1966-12-11",
     registered: "2018-02",
+    email: "t.lindqvist@example.com",
     record: [
       { id: "p6.1", kind: "problem", text: "Right knee pain, medial", visitId: "v5" },
       {
@@ -337,6 +378,7 @@ const visits: Visit[] = [
     id: "v9",
     patientId: "p4",
     reason: "Diabetes review",
+    type: "follow-up",
     day: "2026-09-22",
     time: "11:10",
     seconds: 785,
@@ -346,6 +388,7 @@ const visits: Visit[] = [
     id: "v1",
     patientId: "p1",
     reason: "Persistent cough",
+    type: "new-complaint",
     day: "2026-09-22",
     time: "09:20",
     seconds: 866,
@@ -355,16 +398,19 @@ const visits: Visit[] = [
     id: "v2",
     patientId: "p2",
     reason: "Blood pressure review",
+    type: "treatment-check",
     day: "2026-09-22",
     time: "08:40",
     seconds: 668,
     status: "approved",
     approvedAt: "09:01",
+    emailed: { to: "jon.bell71@example.net", day: "2026-09-22", time: "09:02" },
   },
   {
     id: "v3",
     patientId: "p3",
     reason: "Migraine follow-up",
+    type: "follow-up",
     // Two weeks before the telephone call (v8) that went through the bloods it asked for.
     day: "2026-09-07",
     time: "16:10",
@@ -377,6 +423,7 @@ const visits: Visit[] = [
     id: "v4",
     patientId: "p4",
     reason: "Hip pain",
+    type: "first",
     day: "2026-09-21",
     time: "14:30",
     seconds: 558,
@@ -387,6 +434,7 @@ const visits: Visit[] = [
     id: "v5",
     patientId: "p6",
     reason: "Knee pain, right",
+    type: "first",
     day: "2026-09-21",
     time: "11:15",
     seconds: 760,
@@ -398,6 +446,7 @@ const visits: Visit[] = [
     id: "v8",
     patientId: "p3",
     reason: "Telephone review — blood results",
+    type: "results-review",
     day: "2026-09-21",
     time: "09:05",
     seconds: 0,
@@ -408,11 +457,13 @@ const visits: Visit[] = [
     id: "v6",
     patientId: "p1",
     reason: "Upper respiratory infection",
+    type: "first",
     day: "2026-08-18",
     time: "15:45",
     seconds: 534,
     status: "approved",
     approvedAt: "16:02",
+    emailed: { to: "maya.thompson@example.com", day: "2026-08-18", time: "16:04" },
   },
 ];
 
@@ -433,7 +484,7 @@ const notes: Record<string, Note> = {
       },
       {
         id: "history",
-        body: "Maya reports a dry, non-productive cough that began around six weeks ago following an upper respiratory infection. It is worse at night and occasionally interrupts sleep; Maya's partner, who attended the consultation, adds that it is worst in the early hours. No fever, breathlessness, chest pain, haemoptysis, reflux symptoms, or recent travel. An over-the-counter cough syrup gave no meaningful improvement. Taking an antihistamine, cetirizine, most days.",
+        body: "Since the visit on 18 August, when an upper respiratory infection was managed with fluids, rest and paracetamol: the infection has cleared but a cough has persisted.\nMaya reports a dry, non-productive cough that began around six weeks ago. It is worse at night and occasionally interrupts sleep; Maya's partner, who attended the consultation, adds that it is worst in the early hours. No fever, breathlessness, chest pain, haemoptysis, reflux symptoms, or recent travel. An over-the-counter cough syrup gave no meaningful improvement. Taking an antihistamine, cetirizine, most days.",
         uncertain: [
           {
             text: "cetirizine",
@@ -508,7 +559,7 @@ const notes: Record<string, Note> = {
       },
       {
         id: "history",
-        body: "Jon reports good adherence to amlodipine and no side effects. Home readings have averaged around 138/84. Added salt reduced; walking three times a week. No headaches, visual disturbance, chest pain, or ankle swelling.",
+        body: "Since the amlodipine dose was changed six months ago: home readings steady at around 138/84 and no new symptoms.\nJon reports good adherence to amlodipine and no side effects. Added salt reduced; walking three times a week. No headaches, visual disturbance, chest pain, or ankle swelling.",
       },
       {
         id: "examination",
@@ -562,7 +613,7 @@ const notes: Record<string, Note> = {
       },
       {
         id: "history",
-        body: "Elena reports a reduction from roughly six migraine days per month to two. Attacks remain preceded by visual aura but are shorter and less severe. No adverse effects from propranolol. Sleep remains irregular on night shifts, which Elena identifies as the main trigger.",
+        body: "Since propranolol was started eight weeks ago: migraine days down from about six a month to two.\nElena reports attacks remain preceded by visual aura but are shorter and less severe. No adverse effects from propranolol. Sleep remains irregular on night shifts, which Elena identifies as the main trigger.",
       },
       {
         id: "examination",
@@ -775,7 +826,7 @@ const notes: Record<string, Note> = {
       },
       {
         id: "history",
-        body: "Elena called for her results. Headaches less frequent since starting the preventer — two in the past fortnight, neither with visual aura. Sleeping better. No new neurological symptoms and no rebound analgesia use.",
+        body: "Since the visit on 7 September, when propranolol was continued and blood tests were requested: two headaches in the fortnight, neither with visual aura, and sleeping better.\nElena called for her results. Headaches remain less frequent than before the preventer. No new neurological symptoms and no rebound analgesia use.",
       },
       {
         id: "examination",
@@ -830,7 +881,7 @@ const notes: Record<string, Note> = {
       },
       {
         id: "history",
-        body: "Arthur reports fasting home readings of 8–9 mmol/L most mornings. His daughter, who attended and helps with his tablets, reports that the evening metformin is sometimes missed. No falls and no bleeding on apixaban; bruises easily.",
+        body: "Since the visit on 21 September, when he was seen about his hips: the hips are no different, he has had no falls or bleeding on apixaban, and he bruises easily.\nArthur reports fasting home readings of 8–9 mmol/L most mornings. His daughter, who attended and helps with his tablets, reports that the evening metformin is sometimes missed.",
         uncertain: [
           {
             text: "8–9 mmol/L",
@@ -912,6 +963,18 @@ const transcripts: Record<string, TranscriptLine[]> = {
     },
     {
       speaker: "Doctor",
+      time: "00:38",
+      text: "Is that the cold you came in with in August? We agreed fluids, rest and paracetamol.",
+      earlier: true,
+    },
+    {
+      speaker: "Patient",
+      time: "00:46",
+      text: "Yes, that one. It cleared up, but the cough did not.",
+      earlier: true,
+    },
+    {
+      speaker: "Doctor",
       time: "01:06",
       text: "Is it bringing anything up? Any fever, shortness of breath, pain in your chest, or blood?",
     },
@@ -950,7 +1013,7 @@ const transcripts: Record<string, TranscriptLine[]> = {
     {
       speaker: "Doctor",
       time: "00:22",
-      text: "How have the home readings been since we changed the dose?",
+      text: "It is six months since we changed your amlodipine dose. How have the home readings been since?",
     },
     {
       speaker: "Patient",
@@ -982,7 +1045,7 @@ const transcripts: Record<string, TranscriptLine[]> = {
     {
       speaker: "Doctor",
       time: "00:15",
-      text: "How many migraine days have you had this month?",
+      text: "It is eight weeks since you started the propranolol. How many migraine days have you had this month?",
     },
     {
       speaker: "Patient",
@@ -1120,7 +1183,7 @@ const transcripts: Record<string, TranscriptLine[]> = {
     {
       speaker: "Doctor",
       time: "00:16",
-      text: "How have the sugars been since we last met, Arthur?",
+      text: "How have the sugars been lately, Arthur?",
     },
     {
       speaker: "Patient",
@@ -1131,6 +1194,16 @@ const transcripts: Record<string, TranscriptLine[]> = {
       speaker: "Companion",
       time: "00:41",
       text: "I help Dad with his tablets. He sometimes forgets the evening metformin.",
+    },
+    {
+      speaker: "Doctor",
+      time: "01:12",
+      text: "I saw you yesterday about your hips. Have they been any different since?",
+    },
+    {
+      speaker: "Patient",
+      time: "01:20",
+      text: "No, much the same.",
     },
     {
       speaker: "Doctor",
@@ -1519,8 +1592,8 @@ function settled(note: Note): Note {
 
 /**
  * One language's dataset with this browser's changes laid over it: added
- * patients and recorded visits joined in, retried uploads and approvals
- * applied. `now` is fixed per request, so every component in a render agrees
+ * patients and recorded visits joined in, retried uploads, approvals, emailed
+ * instructions, typed-in addresses and the doctor's visit types applied. `now` is fixed per request, so every component in a render agrees
  * on every status.
  */
 function withChanges(data: Dataset, changes: WorkspaceChanges, now: number): Dataset {
@@ -1535,7 +1608,7 @@ function withChanges(data: Dataset, changes: WorkspaceChanges, now: number): Dat
       registered: demoToday.slice(0, 7),
       record: [],
     })),
-  ];
+  ].map((patient) => (changes.addresses[patient.id] ? { ...patient, email: changes.addresses[patient.id] } : patient));
 
   const notesNow = { ...data.notes };
   const transcriptsNow = { ...data.transcripts };
@@ -1546,15 +1619,20 @@ function withChanges(data: Dataset, changes: WorkspaceChanges, now: number): Dat
     const name = patientsNow.find((patient) => patient.id === entry.patientId)?.name.split(" ")[0];
     const rename = (text: string) => (name ? text.replaceAll(sourceName, name) : text);
     const draft = data.notes.v1;
+    // The first line of History compares today with the last visit, which was Maya's and no one else's.
+    const body = (section: NoteSection) =>
+      rename(section.id === "history" ? section.body.split("\n").slice(1).join("\n") : section.body);
     notesNow[entry.id] = {
       ...draft,
       sections: draft.sections.map((section) => ({
         ...section,
-        body: rename(section.body),
+        body: body(section),
         uncertain: section.uncertain?.map((flag) => ({ ...flag, text: rename(flag.text) })),
       })),
     };
-    transcriptsNow[entry.id] = data.transcripts.v1.map((line) => ({ ...line, text: rename(line.text) }));
+    transcriptsNow[entry.id] = data.transcripts.v1
+      .filter((line) => !line.earlier)
+      .map((line) => ({ ...line, text: rename(line.text) }));
     return {
       id: entry.id,
       patientId: entry.patientId,
@@ -1578,10 +1656,16 @@ function withChanges(data: Dataset, changes: WorkspaceChanges, now: number): Dat
             since: retried,
           }
         : visit;
+    const sent = changes.emailed[visit.id];
+    const typed: Visit = {
+      ...current,
+      ...(changes.types[visit.id] && { type: changes.types[visit.id] }),
+      ...(sent && { emailed: { ...sent, day: demoToday } }),
+    };
     const approvedAt = changes.approved[visit.id];
-    if (current.status !== "ready" || !approvedAt) return current;
+    if (typed.status !== "ready" || !approvedAt) return typed;
     notesNow[visit.id] = settled(notesNow[visit.id]);
-    return { ...current, status: "approved", approvedAt };
+    return { ...typed, status: "approved", approvedAt };
   });
 
   return { ...data, patients: patientsNow, visits: visitsNow, notes: notesNow, transcripts: transcriptsNow };
@@ -1595,6 +1679,14 @@ function views(data: Dataset) {
   const getVisit = (visitId: string | undefined) => visits.find((visit) => visit.id === visitId);
   const getVisitsForPatient = (patientId: string) =>
     visits.filter((visit) => visit.patientId === patientId);
+  /** The doctor's pick, else what Scribe took from the note, else first or follow-up by whether they have been seen before. */
+  const getVisitType = (visit: Visit): VisitType =>
+    visit.type ??
+    (getVisitsForPatient(visit.patientId).some(
+      (other) => other.id !== visit.id && visitOrder(other) < visitOrder(visit),
+    )
+      ? "follow-up"
+      : "first");
   /** Nothing is written until processing has finished. */
   const written = (visitId: string) => {
     const status = getVisit(visitId)?.status;
@@ -1612,6 +1704,7 @@ function views(data: Dataset) {
     getPatient,
     getVisit,
     getVisitsForPatient,
+    getVisitType,
     getNote,
     getTranscript: (visitId: string): TranscriptLine[] =>
       written(visitId) ? (data.transcripts[visitId] ?? []) : [],
@@ -1662,8 +1755,8 @@ function views(data: Dataset) {
 
 export type Demo = ReturnType<typeof views>;
 
-const datasets = { en: english, fa: translated(farsi) };
-const untouched = { en: views(datasets.en), fa: views(datasets.fa) };
+const datasets = { en: english, fa: translated(farsi), ar: translated(arabic) };
+const untouched = { en: views(datasets.en), fa: views(datasets.fa), ar: views(datasets.ar) };
 
 /** The demo in one language, with whatever this browser has changed in it. */
 export function demo(locale: Locale, changes: WorkspaceChanges = noChanges, now = 0): Demo {
@@ -1671,6 +1764,9 @@ export function demo(locale: Locale, changes: WorkspaceChanges = noChanges, now 
     changes.recorded.length ||
     changes.patients.length ||
     Object.keys(changes.approved).length ||
-    Object.keys(changes.retried).length;
+    Object.keys(changes.retried).length ||
+    Object.keys(changes.types).length ||
+    Object.keys(changes.emailed).length ||
+    Object.keys(changes.addresses).length;
   return changed ? views(withChanges(datasets[locale], changes, now)) : untouched[locale];
 }

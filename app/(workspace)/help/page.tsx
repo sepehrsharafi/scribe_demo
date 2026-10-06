@@ -14,7 +14,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eyebrow, Page, PageHead } from "@/components/page-layout";
+import { Page, PageHead, SectionHead } from "@/components/page-layout";
 import { getI18n } from "@/lib/i18n/server";
 
 const topics = [
@@ -72,9 +72,8 @@ export default async function Help() {
   const { t } = await getI18n();
 
   return (
-    <Page className="space-y-8">
+    <Page className="max-w-4xl space-y-8">
       <PageHead
-        eyebrow={t("Support")}
         title={t("How can we help?")}
         description={t("Short answers for starting, recovering, reviewing, and approving a visit.")}
       />
@@ -84,11 +83,11 @@ export default async function Help() {
           <Card
             key={title}
             size="sm"
-            className="relative transition-colors hover:bg-muted/40"
+            className="relative transition-colors hover:bg-muted/50"
           >
             <CardHeader>
               <a href="#questions" className="after:absolute after:inset-0">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-muted text-foreground">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-foreground">
                   <Icon className="size-4.5" />
                 </span>
                 <CardTitle className="mt-3">{t(title)}</CardTitle>
@@ -102,12 +101,7 @@ export default async function Help() {
       </div>
 
       <section className="space-y-4" id="questions">
-        <div className="flex items-center justify-between gap-4 border-b pb-3">
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            {t("Common questions")}
-          </h2>
-          <Eyebrow>{t("{count} answers", { count: faqs.length })}</Eyebrow>
-        </div>
+        <SectionHead title={t("Common questions")} />
         <Accordion>
           {faqs.map(({ question, answer }) => (
             <AccordionItem key={question} value={question}>

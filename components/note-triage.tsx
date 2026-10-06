@@ -1,64 +1,100 @@
 "use client";
 
-import type { Triage } from "@/lib/demo-data";
+import { RiAddLine, RiCloseLine } from "@remixicon/react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { TriageAttrs, Vital } from "@/components/write-up-document";
 import { useI18n } from "@/components/i18n-provider";
 
-const vitals: { field: Exclude<keyof Triage, "complaint">; label: string; unit: string }[] = [
-  { field: "bp", label: "BP", unit: "mmHg" },
-  { field: "hr", label: "HR", unit: "bpm" },
-  { field: "temp", label: "Temp", unit: "°C" },
-  { field: "spo2", label: "SpO₂", unit: "%" },
-  { field: "weight", label: "Weight", unit: "kg" },
-];
-
-const label = "font-mono text-2xs tracking-[0.12em] text-muted-foreground uppercase";
+/* Fields that read as text until they are hovered or focused. */
+const quiet =
+  "-mx-2 w-[calc(100%+1rem)] border-transparent bg-transparent px-2 text-sm font-medium tabular-nums shadow-none hover:bg-muted focus-visible:bg-background dark:bg-transparent";
+const small = "h-7 text-xs font-normal text-muted-foreground md:text-xs";
 
 /**
  * What triage recorded before the doctor came in. It sits at the top of the
  * examination because that is where a doctor looks for it, and it is edited
- * in place like the rest of the note.
+ * in place like the rest of the note — including what is measured: each
+ * reading can be renamed or taken out, and others added.
  */
 export function TriageBlock({
   triage,
   onChange,
 }: {
-  triage: Triage;
-  onChange: (field: keyof Triage, value: string) => void;
+  triage: TriageAttrs;
+  onChange: (change: Partial<TriageAttrs>) => void;
 }) {
   const { t } = useI18n();
+  const { vitals } = triage;
 
-  const field = (name: keyof Triage, text: string, className?: string) => (
-    <Input
-      value={text}
-      onChange={(event) => onChange(name, event.target.value)}
-      aria-label={t(name === "complaint" ? "Chief complaint" : vitals.find((v) => v.field === name)!.label)}
-      className={cn(
-        "-mx-2 h-9 w-[calc(100%+1rem)] rounded-lg bg-transparent px-2 text-sm font-medium tabular-nums hover:bg-muted focus-visible:bg-background dark:bg-transparent",
-        className,
-      )}
-    />
-  );
+  const edit = (index: number, change: Partial<Vital>) =>
+    onChange({ vitals: vitals.map((vital, at) => (at === index ? { ...vital, ...change } : vital)) });
 
   return (
-    <div className="@container overflow-hidden rounded-xl border">
-      <div className="border-b bg-muted/40 px-4 py-3">
-        <span className={label}>{t("Triage · chief complaint")}</span>
-        {field("complaint", triage.complaint)}
+    <div className="overflow-hidden rounded-xl border">
+      <div className="border-b bg-muted/50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">{t("Triage · chief complaint")}</span>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => onChange({ vitals: [...vitals, { label: "", value: "", unit: "" }] })}
+          >
+            <RiAddLine data-icon="inline-start" />
+            {t("Add vital")}
+          </Button>
+        </div>
+        <Input
+          value={triage.complaint}
+          onChange={(event) => onChange({ complaint: event.target.value })}
+          aria-label={t("Chief complaint")}
+          className={quiet}
+        />
       </div>
-      <dl className="grid grid-cols-2 gap-px bg-border @lg:grid-cols-3 @2xl:grid-cols-5">
-        {vitals.map((vital) => (
-          <div key={vital.field} className="bg-background px-4 py-3">
-            <dt className={label}>{t(vital.label)}</dt>
+      <dl className="flex flex-wrap gap-px bg-border">
+        {vitals.map((vital, index) => (
+          <div key={index} className="group/vital relative grow basis-40 bg-background px-4 py-3">
+            <dt>
+              <Input
+                value={vital.label}
+                onChange={(event) => edit(index, { label: event.target.value })}
+                aria-label={t("Vital")}
+                placeholder={t("Vital")}
+                className={cn(quiet, small)}
+              />
+            </dt>
             <dd className="flex items-baseline gap-1.5">
-              <span className="min-w-0 flex-1">{field(vital.field, triage[vital.field], "font-mono")}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{t(vital.unit)}</span>
+              <span className="min-w-0 flex-1">
+                <Input
+                  value={vital.value}
+                  onChange={(event) => edit(index, { value: event.target.value })}
+                  aria-label={vital.label || t("Vital")}
+                  className={quiet}
+                />
+              </span>
+              <span className="w-14 shrink-0">
+                <Input
+                  value={vital.unit}
+                  onChange={(event) => edit(index, { unit: event.target.value })}
+                  aria-label={t("Unit")}
+                  placeholder={t("Unit")}
+                  className={cn(quiet, small)}
+                />
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="absolute end-1.5 top-1.5 opacity-0 group-focus-within/vital:opacity-100 group-hover/vital:opacity-100"
+                onClick={() => onChange({ vitals: vitals.filter((_, at) => at !== index) })}
+                aria-label={t("Remove {name}", { name: vital.label || t("Vital") })}
+                title={t("Remove")}
+              >
+                <RiCloseLine />
+              </Button>
             </dd>
           </div>
         ))}
-        {/* Five readings leave a hole in a two- or three-column grid; this fills it. */}
-        <div aria-hidden="true" className="bg-background @2xl:hidden" />
       </dl>
     </div>
   );

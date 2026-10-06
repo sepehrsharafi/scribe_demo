@@ -52,7 +52,7 @@ function EditingRow({
   });
 
   return (
-    <TableRow className="bg-muted/40 hover:bg-muted/40">
+    <TableRow className="bg-muted/50 hover:bg-muted/50">
       {columns.map((column, index) => (
         <TableCell key={column.field} className="px-2 align-top">
           <Input
@@ -64,7 +64,7 @@ function EditingRow({
             onKeyDown={(event) => {
               if (event.key === "Enter") onDone(fields);
             }}
-            className="h-9 min-w-24 rounded-lg bg-background dark:bg-background"
+            className="min-w-24"
           />
         </TableCell>
       ))}
@@ -125,13 +125,10 @@ export function MedicationTable({ rows, onChange }: { rows: Medication[]; onChan
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border">
         <Table>
-          <TableHeader className="bg-muted/40">
+          <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent">
               {columns.map((column) => (
-                <TableHead
-                  key={column.field}
-                  className="h-10 text-start font-mono text-2xs tracking-[0.12em] text-muted-foreground uppercase"
-                >
+                <TableHead key={column.field} className="h-10 text-start text-xs text-muted-foreground">
                   {t(column.label)}
                 </TableHead>
               ))}
@@ -165,7 +162,7 @@ export function MedicationTable({ rows, onChange }: { rows: Medication[]; onChan
                   )}
                 >
                   <TableCell className="whitespace-normal">
-                    <span className="font-semibold">{row.drug || "—"}</span>
+                    <span className="font-medium">{row.drug || "—"}</span>
                     {row.unconfirmed ? (
                       <span className="mt-1.5 flex flex-wrap items-center gap-2">
                         <Badge className="gap-1.5 bg-warning/15 px-2.5 text-warning dark:bg-warning/20">
@@ -215,7 +212,7 @@ export function MedicationTable({ rows, onChange }: { rows: Medication[]; onChan
           <p key={row.id} className="flex max-w-prose gap-2 text-xs leading-relaxed text-muted-foreground">
             <RiErrorWarningLine className="mt-0.5 size-4 shrink-0 text-warning" />
             <span>
-              <span className="font-semibold text-foreground">{row.drug}: </span>
+              <span className="font-medium text-foreground">{row.drug}: </span>
               {row.unconfirmed}
             </span>
           </p>

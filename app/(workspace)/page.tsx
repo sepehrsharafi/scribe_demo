@@ -1,61 +1,72 @@
 import Link from "next/link";
 import { RiArrowRightLine, RiCheckDoubleLine } from "@remixicon/react";
+import { demoToday } from "@/lib/format";
 import { getI18n } from "@/lib/i18n/server";
-import { patientOptions } from "@/lib/patient-options";
 import { cn } from "@/lib/utils";
-import { Eyebrow, Page } from "@/components/page-layout";
-import { PatientPicker } from "@/components/patient-picker";
+import { Card } from "@/components/ui/card";
+import { Page } from "@/components/page-layout";
 import { RecoveredRecordingAlert } from "@/components/recovered-recording-alert";
 import { TimeGivenBack } from "./time-given-back";
 
 /**
- * Home is the day so far — the one figure worth keeping, the time Scribe gave
- * back — then the way to the next patient, and the only other thing worth a
- * doctor's attention between visits: work that cannot move without them.
+ * Home is the day so far — a greeting, the time Scribe gave back, the only
+ * thing worth a doctor's attention between visits: work that cannot move
+ * without them. The next patient is a click, or N, away.
  */
 export default async function Home() {
-  const { t, f, demo } = await getI18n();
-  const { recovery, waiting } = demo;
+  const { t, f, demo, now } = await getI18n();
+  const { doctor, recovery, waiting } = demo;
+
+  const hour = new Date(now).getHours();
+  const name = doctor.name;
+  const greeting =
+    hour < 12
+      ? t("Good morning, {name}", { name })
+      : hour < 18
+        ? t("Good afternoon, {name}", { name })
+        : t("Good evening, {name}", { name });
 
   return (
-    <Page className="max-w-3xl space-y-12 py-10 lg:py-16">
+    <Page className="max-w-3xl space-y-8 py-10 lg:py-12">
       <RecoveredRecordingAlert
         patientName={demo.getPatient(recovery.patientId)?.name ?? ""}
         capturedSeconds={recovery.seconds}
         resumeHref="/new?resume=1"
       />
 
-      <h1 className="sr-only">{t("Home")}</h1>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
+        <p className="text-xs text-muted-foreground">{f.longDay(demoToday)}</p>
+      </header>
+
       <TimeGivenBack />
 
-      <PatientPicker patients={patientOptions(demo, f)} lead />
-
-      <section aria-labelledby="waiting" className="space-y-3">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 id="waiting" className="font-heading text-lg font-semibold tracking-tight">
-            {t("Waiting on you")}
-          </h2>
+      <Card className="gap-0 py-0">
+        <div className="flex items-baseline justify-between gap-4 border-b px-5 py-4">
+          <h2 className="text-base font-semibold">{t("Waiting on you")}</h2>
           {waiting.length ? (
-            <Eyebrow>{waiting.length === 1 ? t("1 visit") : t("{count} visits", { count: waiting.length })}</Eyebrow>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {waiting.length === 1 ? t("1 visit") : t("{count} visits", { count: waiting.length })}
+            </p>
           ) : null}
         </div>
 
         {waiting.length ? (
-          <ul className="divide-y border-y">
+          <ul className="divide-y">
             {waiting.map((visit) => {
               const failed = visit.status === "failed";
               return (
                 <li key={visit.id}>
                   <Link
                     href={`/visits/${visit.id}`}
-                    className="group/owed -mx-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 rounded-xl px-3 py-3.5 transition-colors hover:bg-muted/50"
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-5 py-3 transition-colors hover:bg-muted"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{demo.getPatient(visit.patientId)?.name}</span>
-                      <span className="mt-0.5 flex min-w-0 items-baseline gap-2 text-xs text-muted-foreground">
+                      <span className="block truncate text-sm font-medium">{demo.getPatient(visit.patientId)?.name}</span>
+                      <span className="flex min-w-0 items-baseline gap-2 text-xs text-muted-foreground">
                         <span className="truncate">{visit.reason || t("New visit")}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="shrink-0 font-mono tabular-nums">
+                        <span className="shrink-0 tabular-nums">
                           {f.day(visit.day)} · {visit.time}
                         </span>
                       </span>
@@ -67,7 +78,7 @@ export default async function Home() {
                       )}
                     >
                       {failed ? t("Retry the upload") : t("Review and approve")}
-                      <RiArrowRightLine className="size-4 transition-transform group-hover/owed:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover/owed:-translate-x-0.5" />
+                      <RiArrowRightLine className="size-4 rtl:-scale-x-100" />
                     </span>
                   </Link>
                 </li>
@@ -75,12 +86,12 @@ export default async function Home() {
             })}
           </ul>
         ) : (
-          <p className="flex items-center gap-2 border-y py-4 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 px-5 py-4 text-sm text-muted-foreground">
             <RiCheckDoubleLine className="size-4 text-primary" />
             {t("Nothing is waiting. Every note is approved.")}
           </p>
         )}
-      </section>
+      </Card>
     </Page>
   );
 }

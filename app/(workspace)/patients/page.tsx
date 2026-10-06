@@ -22,7 +22,6 @@ export default async function Patients() {
   return (
     <Page className="space-y-8">
       <PageHead
-        eyebrow={t("Records")}
         title={t("Patients")}
         description={t("Only what is needed to group visits: a name and a date of birth.")}
         actions={<NewVisitButton />}

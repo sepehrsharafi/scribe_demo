@@ -6,7 +6,6 @@ import { processingSteps, type ProcessingStep } from "@/lib/workspace";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { Eyebrow } from "@/components/page-layout";
 import { useI18n } from "@/components/i18n-provider";
 
 const copy: Record<ProcessingStep, { done: string; live: string; detail: string }> = {
@@ -95,18 +94,18 @@ export function ProcessingSteps({
       : t(copy[step.id].detail, { name: patientName });
 
   return (
-    <section aria-live="polite" className="mx-auto max-w-xl py-4 sm:py-8">
-      <Eyebrow className={cn(failure && "text-destructive")}>
-        {failure
-          ? t("Needs you")
-          : t("Step {step} of {total}", {
-              step: Math.min(live + 1, processingSteps.length),
-              total: processingSteps.length,
-            })}
-      </Eyebrow>
-      {/* Keyed by the step, so each new heading settles in rather than swapping. */}
-      <div key={failure ? "failed" : live} className="animate-in duration-500 fade-in slide-in-from-bottom-1">
-        <h2 className="mt-3 font-heading text-2xl font-semibold tracking-tight text-balance">{title}</h2>
+    <section aria-live="polite" className="max-w-xl py-2">
+      {/* Keyed by the step, so each new heading fades in rather than swapping. */}
+      <div key={failure ? "failed" : live} className="animate-in duration-500 fade-in motion-reduce:animate-none">
+        <p className={cn("text-xs font-medium text-muted-foreground", failure && "text-destructive")}>
+          {failure
+            ? t("Needs you")
+            : t("Step {step} of {total}", {
+                step: Math.min(live + 1, processingSteps.length),
+                total: processingSteps.length,
+              })}
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-balance">{title}</h2>
         <p className="mt-2 max-w-prose leading-relaxed text-muted-foreground">{detail}</p>
       </div>
 
@@ -136,7 +135,7 @@ export function ProcessingSteps({
                 <span aria-hidden="true" className="absolute start-3 top-8 bottom-1 w-px -translate-x-1/2 bg-border rtl:translate-x-1/2">
                   <span
                     className={cn(
-                      "block h-full origin-top bg-primary transition-transform duration-700 ease-out",
+                      "block h-full origin-top bg-primary transition-transform duration-500 ease-out motion-reduce:transition-none",
                       state === "done" ? "scale-y-100" : "scale-y-0",
                     )}
                   />
@@ -146,21 +145,22 @@ export function ProcessingSteps({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "relative flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-2xs tabular-nums transition-colors duration-500",
+                  "relative flex size-6 shrink-0 items-center justify-center rounded-full text-2xs tabular-nums transition-colors duration-500 motion-reduce:transition-none",
                   state === "done" && "bg-primary text-primary-foreground",
-                  state === "live" && "border-2 border-primary bg-background text-primary",
+                  // Lights once the line down to it has filled.
+                  state === "live" && "border-2 border-primary bg-background text-primary delay-500",
                   state === "waiting" && "border bg-background text-muted-foreground",
                   state === "failed" && "bg-destructive text-background",
                 )}
               >
                 {state === "done" ? (
-                  <RiCheckLine className="size-3.5 animate-in duration-300 zoom-in-50" />
+                  <RiCheckLine className="size-3.5 animate-in duration-300 zoom-in-50 motion-reduce:animate-none" />
                 ) : state === "failed" ? (
                   <RiErrorWarningLine className="size-3.5" />
                 ) : state === "live" ? (
                   <>
-                    <span className="absolute inset-0 animate-[scribe-breathe_2.4s_ease-in-out_infinite] rounded-full bg-primary/25 motion-reduce:animate-none" />
-                    <span className="size-2 rounded-full bg-primary" />
+                    <span className="absolute inset-0 animate-[scribe-breathe_2.4s_ease-in-out_0.5s_infinite] rounded-full bg-primary/25 opacity-0 motion-reduce:animate-none" />
+                    <span className="size-2 animate-in rounded-full bg-primary delay-500 duration-500 fill-mode-backwards fade-in motion-reduce:animate-none" />
                   </>
                 ) : (
                   index + 1
@@ -169,25 +169,26 @@ export function ProcessingSteps({
 
               <div className="min-w-0 flex-1 pt-0.5">
                 <span
+                  key={state}
                   className={cn(
-                    "block text-sm",
-                    state === "live" || state === "failed" ? "font-semibold text-foreground" : "text-muted-foreground",
+                    "block animate-in text-sm duration-500 fade-in motion-reduce:animate-none",
+                    state === "live" || state === "failed" ? "font-medium text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {state === "done" ? t(copy[item.id].done) : t(copy[item.id].live)}
                 </span>
                 {state === "live" ? (
-                  <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-primary/10">
+                  <span className="mt-2.5 block h-1 animate-in overflow-hidden rounded-full bg-primary/10 delay-500 duration-500 fill-mode-backwards fade-in motion-reduce:animate-none">
                     <span
                       key={item.id}
-                      className="block h-full animate-[scribe-fill_var(--step)_linear_both] rounded-full bg-primary ltr:origin-left rtl:origin-right motion-reduce:animate-none"
+                      className="block h-full animate-[scribe-fill_var(--step)_ease-out_both] rounded-full bg-primary ltr:origin-left rtl:origin-right motion-reduce:animate-none"
                       style={{ "--step": `${item.seconds}s`, animationDelay: `-${spent}s` } as CSSProperties}
                     />
                   </span>
                 ) : null}
               </div>
 
-              <span className="pt-1 font-mono text-2xs tracking-[0.12em] text-muted-foreground uppercase">
+              <span key={state} className="animate-in pt-0.5 text-xs text-muted-foreground duration-500 fade-in motion-reduce:animate-none">
                 {state === "done" ? t("Done") : state === "failed" ? t("Stopped") : null}
               </span>
             </li>
@@ -196,7 +197,7 @@ export function ProcessingSteps({
       </ol>
 
       {failure ? null : (
-        <p className="mt-10 flex items-center gap-2 border-t pt-4 text-xs text-muted-foreground">
+        <p className="mt-8 flex items-center gap-2 text-xs text-muted-foreground">
           <RiNotification3Line className="size-4 shrink-0" />
           {t("You can leave this visit. Scribe tells you when the note is ready.")}
         </p>

@@ -2,7 +2,7 @@ import { demoToday } from "@/lib/format";
 import { getI18n } from "@/lib/i18n/server";
 import { patientOptions } from "@/lib/patient-options";
 import { ContextPanel } from "@/components/context-panel";
-import { Page, PageHead, PageTransition } from "@/components/page-layout";
+import { Page, PageHead } from "@/components/page-layout";
 import { PatientPicker } from "@/components/patient-picker";
 import { VisitIdentity } from "@/components/visit-identity";
 import { ChangePatientButton } from "@/components/new-visit-dialog";
@@ -26,16 +26,14 @@ export default async function NewVisitPage({ searchParams }: PageProps<"/new">) 
     );
   }
 
+  // /new → /new with someone else is the same route: the key starts the visit afresh.
   return (
-    <PageTransition>
-      {/* /new → /new with someone else is the same route: the key starts the visit afresh. */}
-      <NewVisit
-        key={`${patient.id}|${resume ? "resume" : ""}`}
-        patient={{ id: patient.id, name: patient.name, firstName: patient.name.split(" ")[0] }}
-        recovered={resume ? demo.recovery.seconds : 0}
-        identity={<VisitIdentity patientId={patient.id} action={resume ? null : <ChangePatientButton />} />}
-        context={<ContextPanel patientId={patient.id} day={demoToday} extrasKey={`new:${patient.id}`} />}
-      />
-    </PageTransition>
+    <NewVisit
+      key={`${patient.id}|${resume ? "resume" : ""}`}
+      patient={{ id: patient.id, name: patient.name, firstName: patient.name.split(" ")[0] }}
+      recovered={resume ? demo.recovery.seconds : 0}
+      identity={<VisitIdentity patientId={patient.id} action={resume ? null : <ChangePatientButton />} />}
+      context={<ContextPanel patientId={patient.id} day={demoToday} extrasKey={`new:${patient.id}`} />}
+    />
   );
 }

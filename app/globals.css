@@ -6,99 +6,87 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.18 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.18 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* One violet family on hue 292.8, built from the brand lavender #e8e4fe
-     (the accent). Primary is the same hue pushed deep enough for white text
-     at 6.6:1; the charts step through it from light to dark. */
-  --primary: oklch(0.5 0.2 292.8);
-  --primary-foreground: oklch(0.985 0.01 292.8);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  /* One blue-violet family on hue 288.4, sampled from the reference. Primary
+     is deep enough for white text at 6.3:1; the accent is the selected-row
+     lavender; the charts step through the hue from light to dark. */
+  --primary: oklch(0.514 0.23 288.4);
+  --primary-foreground: oklch(0.985 0.01 288.4);
+  --secondary: oklch(0.967 0 0);
+  --secondary-foreground: oklch(0.21 0 0);
+  --muted: oklch(0.965 0 0);
   /* Darker than the preset's 0.556: secondary text is read by specialists
      with reduced eyesight, so it clears 6:1 on white instead of scraping AA. */
   --muted-foreground: oklch(0.47 0 0);
-  --accent: oklch(0.93 0.035 292.8);
-  --accent-foreground: oklch(0.38 0.14 292.8);
+  --accent: oklch(0.931 0.035 289.2);
+  --accent-foreground: oklch(0.38 0.17 288.4);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.72 0.12 292.8);
-  --chart-1: oklch(0.87 0.06 292.8);
-  --chart-2: oklch(0.75 0.12 292.8);
-  --chart-3: oklch(0.63 0.18 292.8);
-  --chart-4: oklch(0.52 0.2 292.8);
-  --chart-5: oklch(0.42 0.17 292.8);
-  --radius: 0.45rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.5 0.2 292.8);
-  --sidebar-primary-foreground: oklch(0.985 0.01 292.8);
-  --sidebar-accent: oklch(0.93 0.035 292.8);
-  --sidebar-accent-foreground: oklch(0.38 0.14 292.8);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.72 0.12 292.8);
+  --border: oklch(0.931 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.7 0.13 288.4);
+  --chart-1: oklch(0.87 0.06 288.4);
+  --chart-2: oklch(0.75 0.12 288.4);
+  --chart-3: oklch(0.63 0.18 288.4);
+  --chart-4: oklch(0.52 0.22 288.4);
+  --chart-5: oklch(0.42 0.17 288.4);
+  --radius: 0.5rem;
+  /* The canvas the white page card sits on: a faint lavender-white. */
+  --sidebar: oklch(0.982 0.009 292.8);
+  --sidebar-foreground: oklch(0.18 0 0);
+  --sidebar-primary: oklch(0.514 0.23 288.4);
+  --sidebar-primary-foreground: oklch(0.985 0.01 288.4);
+  --sidebar-accent: oklch(0.931 0.035 289.2);
+  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-border: oklch(0.931 0 0);
+  --sidebar-ring: oklch(0.7 0.13 288.4);
 
   /* Clinical status hue. Not part of the shadcn preset - added so that
      "waiting on the doctor" has its own voice next to primary/destructive. */
   --warning: oklch(0.5 0.11 76);
   --warning-foreground: oklch(0.985 0 0);
   --warning-muted: oklch(0.962 0.03 86);
-
-  /* The inverse surface: ink in the light theme, paper in the dark one. It is
-     what the app says things on — its toasts — so they
-     read as messages, not as more page. Tinted with the brand hue. */
-  --inverse: oklch(0.2 0.018 292.8);
-  --inverse-foreground: oklch(0.985 0.004 292.8);
-  --inverse-muted: oklch(0.78 0.02 292.8);
-  --inverse-signal: oklch(0.8 0.12 292.8);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.205 0.01 290);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.205 0.01 290);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.24 0.01 290);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.72 0.15 292.8);
-  --primary-foreground: oklch(0.22 0.07 292.8);
-  --secondary: oklch(0.274 0.006 286.033);
+  --primary: oklch(0.72 0.16 288.4);
+  --primary-foreground: oklch(0.2 0.07 288.4);
+  --secondary: oklch(0.274 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.76 0 0);
-  --accent: oklch(0.32 0.07 292.8);
-  --accent-foreground: oklch(0.93 0.035 292.8);
+  --accent: oklch(0.32 0.075 289.2);
+  --accent-foreground: oklch(0.93 0.035 289.2);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.56 0.14 292.8);
-  --chart-1: oklch(0.87 0.06 292.8);
-  --chart-2: oklch(0.75 0.12 292.8);
-  --chart-3: oklch(0.63 0.18 292.8);
-  --chart-4: oklch(0.52 0.2 292.8);
-  --chart-5: oklch(0.42 0.17 292.8);
-  --sidebar: oklch(0.205 0 0);
+  --ring: oklch(0.6 0.15 288.4);
+  --chart-1: oklch(0.87 0.06 288.4);
+  --chart-2: oklch(0.75 0.12 288.4);
+  --chart-3: oklch(0.63 0.18 288.4);
+  --chart-4: oklch(0.52 0.22 288.4);
+  --chart-5: oklch(0.42 0.17 288.4);
+  --sidebar: oklch(0.15 0.015 290);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.72 0.15 292.8);
-  --sidebar-primary-foreground: oklch(0.22 0.07 292.8);
-  --sidebar-accent: oklch(0.32 0.07 292.8);
-  --sidebar-accent-foreground: oklch(0.93 0.035 292.8);
+  --sidebar-primary: oklch(0.72 0.16 288.4);
+  --sidebar-primary-foreground: oklch(0.2 0.07 288.4);
+  --sidebar-accent: oklch(0.32 0.075 289.2);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.14 292.8);
+  --sidebar-ring: oklch(0.6 0.15 288.4);
 
   --warning: oklch(0.78 0.13 82);
   --warning-foreground: oklch(0.21 0.03 82);
   --warning-muted: oklch(0.32 0.05 82);
-
-  --inverse: oklch(0.965 0.01 292.8);
-  --inverse-foreground: oklch(0.18 0.015 292.8);
-  --inverse-muted: oklch(0.44 0.03 292.8);
-  --inverse-signal: oklch(0.5 0.2 292.8);
 }
 
 @theme inline {
@@ -136,24 +124,20 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-muted: var(--warning-muted);
-  --color-inverse: var(--inverse);
-  --color-inverse-foreground: var(--inverse-foreground);
-  --color-inverse-muted: var(--inverse-muted);
-  --color-inverse-signal: var(--inverse-signal);
 
   --font-sans: var(--font-sans);
-  --font-heading: var(--font-heading);
-  --font-mono: var(--font-geist-mono);
+  /* Only so that shadcn's primitives, which ask for font-heading, resolve. */
+  --font-heading: var(--font-sans);
 
   /*
    * The small end of the scale is set a step larger than Tailwind's, because
    * the people reading it are specialists, many with reduced eyesight. The
    * names keep their order; the sizes under them moved:
-   *   2xs  11 -> 13px  mono uppercase labels, index numerals
-   *   xs   12 -> 14px  secondary and helper text, captions, status pills
+   *   2xs  11 -> 13px  counts and captions
+   *   xs   12 -> 14px  secondary and helper text, status pills
    *   sm   14 -> 16px  body text, table text, controls
    * base (16px) and everything above it — headings, display figures — are
-   * untouched, so the hierarchy is carried by weight and face down there.
+   * untouched, so the hierarchy is carried by weight down there.
    */
   --text-2xs: 0.8125rem;
   --text-2xs--line-height: 1.35;
@@ -162,8 +146,8 @@
   --text-sm: 1rem;
   --text-sm--line-height: 1.5;
 
-  /* One curve for anything that travels — the sidebar, the top bar, the
-     recording card: quick out of the gate, a long soft landing. */
+  /* One curve for anything that travels — the sidebar, the recording card:
+     quick out of the gate, a long soft landing. */
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   --radius-sm: calc(var(--radius) * 0.6);
@@ -180,13 +164,10 @@
     @apply border-border outline-ring/50;
   }
 
-  /* Reserve the scrollbar's track on every page, so a short page and a long
-     one set their content to exactly the same width. On a phone the whole
-     scale steps down one notch: 16px text becomes 15px and everything sized
-     in rem follows, so the proportions stay those of the desktop. */
+  /* On a phone the whole scale steps down one notch: 16px text becomes 15px
+     and everything sized in rem follows, so the proportions stay those of the
+     desktop. */
   html {
-    scrollbar-gutter: stable;
-
     @media (width < 40rem) {
       font-size: 93.75%;
     }
@@ -195,31 +176,28 @@
   body {
     @apply bg-background text-foreground font-sans text-sm antialiased;
   }
-
-  h1,
-  h2,
-  h3,
-  h4 {
-    @apply font-heading;
-  }
 }
 
-/* Demo-only Farsi. Outside any layer so it outranks the font classes next/font
-   puts on <html>. One face does all three jobs, and letter-spacing is switched
-   off because it breaks the joins of Persian script. */
+/* Demo-only Farsi and Arabic. Outside any layer so they outrank the font
+   classes next/font puts on <html>. One face does the whole page, and
+   letter-spacing is switched off because it breaks the joins of the script. */
 html[lang="fa"] {
   --font-sans: var(--font-farsi);
-  --font-heading: var(--font-farsi);
-  --font-geist-mono: var(--font-farsi);
 }
 
-html[lang="fa"] * {
+html[lang="ar"] {
+  --font-sans: var(--font-arabic);
+}
+
+html[lang="fa"] *,
+html[lang="ar"] * {
   letter-spacing: normal !important;
 }
 
-/* Persian letters sit much smaller than Latin ones at the same size, so the
-   smallest step (labels, eyebrows, index numerals) goes up a little in Farsi. */
-html[lang="fa"] .text-2xs {
+/* Persian and Arabic letters sit much smaller than Latin ones at the same
+   size, so the smallest step (captions and counts) goes up a little. */
+html[lang="fa"] .text-2xs,
+html[lang="ar"] .text-2xs {
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -230,7 +208,7 @@ body:has([data-recording-dock][data-open]) [data-sonner-toaster][data-y-position
   bottom: calc(var(--offset-bottom, 1.5rem) + 5.5rem) !important;
 }
 
-/* The live signal: the sign-in screen and the minimised recording. */
+/* The live signal of a recording. */
 @keyframes scribe-wave {
   0%,
   100% {
@@ -288,56 +266,10 @@ body:has([data-recording-dock][data-open]) [data-sonner-toaster][data-y-position
   }
 }
 
-/*
- * View transitions. What leaves goes quickly, so it never competes with what
- * arrives; what arrives settles in from a few pixels below. Everything not
- * named — the sidebar, the dock — swaps at once and never moves. Browsers
- * without the API simply swap.
- */
-::view-transition {
-  pointer-events: none;
-}
-
-::view-transition-old(root) {
-  display: none;
-}
-
-::view-transition-new(root) {
-  animation: none;
-}
-
-::view-transition-old(.page-out),
-::view-transition-old(.skeleton-out),
-::view-transition-old(.tab-out) {
-  animation: 140ms ease-out both scribe-leave;
-}
-
-::view-transition-new(.page-in) {
-  animation: 340ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both scribe-arrive;
-}
-
-::view-transition-new(.tab-in) {
-  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both scribe-arrive;
-}
-
-@keyframes scribe-leave {
+/* The sign-in artwork's slow drift. Each layer says how far it travels, so
+   two layers can move against each other. */
+@keyframes scribe-drift {
   to {
-    opacity: 0;
-  }
-}
-
-@keyframes scribe-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
+    transform: translate3d(var(--drift-x, 0), var(--drift-y, 0), 0) rotate(var(--drift-turn, 0deg));
   }
 }

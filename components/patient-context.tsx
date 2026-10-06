@@ -8,10 +8,6 @@ import { EntrySource } from "@/components/entry-source";
 /** **bold**, or [label](visitId) — an empty label reads as that visit's date. */
 const token = /\*\*(.+?)\*\*|\[([^\]]*)\]\((\w+)\)/g;
 
-/** Base UI measures the panel; this animates it between nothing and that height. */
-const panel =
-  "h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none";
-
 function Points({ items, render }: { items: string[]; render: (text: string) => ReactNode }) {
   return (
     <ul className="grid list-disc gap-1.5 ps-5 text-sm leading-relaxed marker:text-muted-foreground">
@@ -76,7 +72,7 @@ export async function PatientContext({
               key={at}
               href={`/visits/${visit.id}`}
               title={visit.reason || t("New visit")}
-              className="font-mono text-[0.9em] whitespace-nowrap tabular-nums underline decoration-foreground/25 decoration-1 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+              className="whitespace-nowrap tabular-nums text-primary underline-offset-4 hover:underline"
             >
               {label || f.date(visit.day, "short")}
             </Link>
@@ -103,7 +99,7 @@ export async function PatientContext({
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-14">
       <div className="grid min-w-0 content-start gap-8">
         <section aria-label={t("Summary")}>
-          <p className="max-w-[68ch] font-heading text-xl leading-snug font-medium tracking-tight text-pretty">
+          <p className="max-w-prose text-base leading-7 text-pretty">
             {brief ? inline(brief.summary) : t("New to the practice. Nothing is on record yet.")}
           </p>
           <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -113,7 +109,7 @@ export async function PatientContext({
                 {t("Last visit")}{" "}
                 <Link
                   href={`/visits/${previous.id}`}
-                  className="font-mono text-foreground tabular-nums underline-offset-4 hover:underline"
+                  className="text-foreground tabular-nums underline-offset-4 hover:underline"
                 >
                   {f.date(previous.day, "short")}
                 </Link>
@@ -134,39 +130,37 @@ export async function PatientContext({
         <Collapsible defaultOpen className="border-t">
           <CollapsibleTrigger className="group/insights flex w-full items-center justify-between gap-4 py-4 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="grid gap-0.5">
-              <span className="font-heading text-base font-semibold tracking-tight">{t("Patient insights")}</span>
+              <span className="text-base font-semibold">{t("Patient insights")}</span>
               <span className="text-xs text-muted-foreground">{t("Problem summary and visit plan")}</span>
             </span>
             <RiArrowDownSFill
               aria-hidden="true"
-              className="size-5 shrink-0 text-muted-foreground transition-transform group-data-panel-open/insights:rotate-180"
+              className="size-5 shrink-0 text-muted-foreground transition-[rotate,color] duration-250 ease-drawer group-hover/insights:text-foreground group-data-panel-open/insights:rotate-180 motion-reduce:transition-none"
             />
           </CollapsibleTrigger>
-          <CollapsibleContent className={panel}>
+          <CollapsibleContent hiddenUntilFound>
             <div className="grid gap-8 pt-1 pb-2">
-              <section aria-labelledby="problem-summary" className="grid gap-2">
-                <h3 id="problem-summary" className="font-heading text-base font-semibold tracking-tight">
+              <section aria-labelledby="problem-summary" className="grid gap-1">
+                <h3 id="problem-summary" className="text-base font-semibold">
                   {t("Problem summary")}
                 </h3>
                 {brief?.problems.length ? (
-                  <div className="divide-y">
-                    {brief.problems.map((problem) => (
-                      <Collapsible key={problem.title} defaultOpen>
-                        <CollapsibleTrigger className="group/problem flex w-full items-center gap-2 py-3 text-start text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                          <RiArrowDownSFill
-                            aria-hidden="true"
-                            className="size-4 shrink-0 -rotate-90 transition-transform group-data-panel-open/problem:rotate-0 rtl:rotate-90 rtl:group-data-panel-open/problem:rotate-0"
-                          />
-                          {problem.title}
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className={panel}>
-                          <div className="ps-6 pb-4">
-                            <Points items={problem.points} render={inline} />
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))}
-                  </div>
+                  brief.problems.map((problem) => (
+                    <Collapsible key={problem.title} defaultOpen>
+                      <CollapsibleTrigger className="group/problem flex w-full items-center gap-2 rounded-sm py-2 text-start text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
+                        <RiArrowDownSFill
+                          aria-hidden="true"
+                          className="size-4 shrink-0 -rotate-90 transition-[rotate] duration-250 ease-drawer group-data-panel-open/problem:rotate-0 motion-reduce:transition-none rtl:rotate-90 rtl:group-data-panel-open/problem:rotate-0"
+                        />
+                        {problem.title}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent hiddenUntilFound>
+                        <div className="ps-6 pb-3">
+                          <Points items={problem.points} render={inline} />
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))
                 ) : (
                   <p className="py-2 text-sm text-muted-foreground">
                     {t("Nothing on the record yet: no long-term problems to carry into this visit.")}
@@ -177,11 +171,11 @@ export async function PatientContext({
               {brief?.plan.length ? (
                 <section aria-labelledby="visit-plan" className="grid gap-3">
                   <div className="flex items-center justify-between gap-4">
-                    <h3 id="visit-plan" className="font-heading text-base font-semibold tracking-tight">
+                    <h3 id="visit-plan" className="text-base font-semibold">
                       {onVisit ? t("Visit plan") : t("Plan for the next visit")}
                     </h3>
                     {planDay ? (
-                      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground tabular-nums">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
                         <RiTimeLine className="size-4" aria-hidden="true" />
                         {f.date(planDay, "short")}
                       </span>
@@ -197,12 +191,9 @@ export async function PatientContext({
 
       <aside className="grid min-w-0 content-start gap-10">
         <section aria-labelledby="medications" className="grid content-start gap-3">
-          <h3
-            id="medications"
-            className="flex items-baseline justify-between gap-3 border-b pb-3 font-heading text-base font-semibold tracking-tight"
-          >
+          <h3 id="medications" className="flex items-baseline justify-between gap-3 text-base font-semibold">
             {t("Medications")}
-            <span className="font-mono text-xs font-normal text-muted-foreground tabular-nums">{medications.length}</span>
+            <span className="text-xs font-normal text-muted-foreground tabular-nums">{medications.length}</span>
           </h3>
           {medications.length ? (
             <ul className="grid gap-4">

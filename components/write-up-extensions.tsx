@@ -6,11 +6,12 @@ import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import { RiCapsuleLine, RiErrorWarningLine } from "@remixicon/react";
 import { createContext, use, type ComponentType } from "react";
-import type { Medication, Triage } from "@/lib/demo-data";
+import type { Medication } from "@/lib/demo-data";
 import type { Locale } from "@/lib/i18n/locales";
 import { translate } from "@/lib/i18n/translate";
 import { MedicationTable } from "@/components/note-medications";
 import { TriageBlock } from "@/components/note-triage";
+import type { TriageAttrs } from "@/components/write-up-document";
 import { useI18n } from "@/components/i18n-provider";
 
 /** What the patient's copy reads from the note while both are open. */
@@ -42,7 +43,7 @@ const UncertainMark = Mark.create({
       mergeAttributes(HTMLAttributes, {
         "data-uncertain": "",
         class:
-          "cursor-help rounded-sm bg-warning/20 text-inherit underline decoration-warning decoration-2 underline-offset-4 dark:bg-warning/25",
+          "cursor-help rounded-sm bg-warning/15 text-inherit underline decoration-warning/60 decoration-dotted underline-offset-4",
       }),
       0,
     ];
@@ -103,10 +104,7 @@ function MedicationsView({ node, updateAttributes, selected }: ReactNodeViewProp
 function TriageView({ node, updateAttributes, selected }: ReactNodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false} data-selected={selected} className={`my-3 ${selectedRing}`}>
-      <TriageBlock
-        triage={node.attrs as Triage}
-        onChange={(field, value) => updateAttributes({ [field]: value })}
-      />
+      <TriageBlock triage={node.attrs as TriageAttrs} onChange={updateAttributes} />
     </NodeViewWrapper>
   );
 }
@@ -115,7 +113,7 @@ function GapView({ node, selected }: ReactNodeViewProps) {
   const { t } = useI18n();
   return (
     <NodeViewWrapper contentEditable={false} data-selected={selected} className={`my-2 ${selectedRing}`}>
-      <span className="inline-flex items-center gap-1.5 rounded-xl bg-warning/10 px-2.5 py-1.5 text-xs text-warning">
+      <span className="inline-flex items-center gap-2 rounded-xl border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
         <RiErrorWarningLine className="size-4 shrink-0" />
         {node.attrs.manual
           ? t("Explicit gap — this section was left empty")
@@ -132,41 +130,43 @@ function MedicinesView({ selected }: ReactNodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false} data-selected={selected} className={`my-3 ${selectedRing}`}>
-      {rows.length ? (
-        <ul className="grid gap-3">
-          {rows.map((row) => (
-            <li key={row.id} className="flex gap-3">
-              <RiCapsuleLine className="mt-1 size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 leading-relaxed">
-                <strong className="font-semibold">{row.drug || t("Unnamed medicine")}</strong>
-                {[row.dose, row.frequency, row.duration].some(Boolean) ? (
-                  <span className="text-muted-foreground">
-                    {" — "}
-                    {[row.dose, row.frequency, row.duration].filter(Boolean).join(" · ")}
-                  </span>
-                ) : null}
-                {row.unconfirmed ? (
-                  <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-warning">
-                    <RiErrorWarningLine className="size-3.5 shrink-0" />
-                    {t("To be confirmed in the note before this goes to the patient.")}
-                  </span>
-                ) : null}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-muted-foreground">{t("No medicines were started or changed at this visit.")}</p>
-      )}
-      <p className="mt-2 font-mono text-2xs tracking-[0.12em] text-muted-foreground uppercase">
-        {t("From the note’s medication table")}
-      </p>
+      <div className="overflow-hidden rounded-xl border">
+        <p className="border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
+          {t("From the note’s medication table")}
+        </p>
+        {rows.length ? (
+          <ul className="divide-y">
+            {rows.map((row) => (
+              <li key={row.id} className="flex gap-3 px-4 py-3">
+                <RiCapsuleLine className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0">
+                  <strong className="font-medium">{row.drug || t("Unnamed medicine")}</strong>
+                  {[row.dose, row.frequency, row.duration].some(Boolean) ? (
+                    <span className="text-muted-foreground">
+                      {" — "}
+                      {[row.dose, row.frequency, row.duration].filter(Boolean).join(" · ")}
+                    </span>
+                  ) : null}
+                  {row.unconfirmed ? (
+                    <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-warning">
+                      <RiErrorWarningLine className="size-3.5 shrink-0" />
+                      {t("To be confirmed in the note before this goes to the patient.")}
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="px-4 py-3 text-muted-foreground">{t("No medicines were started or changed at this visit.")}</p>
+        )}
+      </div>
     </NodeViewWrapper>
   );
 }
 
 const Medications = dataBlock("medications", MedicationsView, { rows: [] });
-const TriageNode = dataBlock("triage", TriageView, { complaint: "", bp: "", hr: "", temp: "", spo2: "", weight: "" });
+const TriageNode = dataBlock("triage", TriageView, { complaint: "", vitals: [] });
 const Gap = dataBlock("gap", GapView, { manual: false });
 const Medicines = dataBlock("medicines", MedicinesView, {});
 

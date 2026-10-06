@@ -1,6 +1,6 @@
 "use client";
 
-import { RiArrowDownLine, RiCheckDoubleLine, RiErrorWarningLine, RiShieldCheckLine } from "@remixicon/react";
+import { RiArrowDownLine, RiErrorWarningLine, RiShieldCheckLine } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import type { WriteUp } from "@/components/use-write-up";
 import { showNextUncertain, WriteUpDocument } from "@/components/write-up-editor";
@@ -11,20 +11,16 @@ export function jumpTo(id: "medications") {
 }
 
 /**
- * The note: one document, laid out in numbered sections, that the doctor
- * edits like any text — headings included. What Scribe was unsure of is
- * highlighted in place and explained beside it; an examination nobody did
- * stays an explicit gap. Approving signs it off and leaves it editable.
+ * The note: one document, laid out in sections, that the doctor edits like
+ * any text — headings included. What Scribe was unsure of is highlighted in
+ * place and explained beside it; an examination nobody did stays an explicit
+ * gap. Approving signs it off and leaves it editable.
  */
 export function Note({
   writeUp,
-  doctor,
-  approvedAt,
   manual,
 }: {
   writeUp: WriteUp;
-  doctor: string;
-  approvedAt?: string;
   /** Written by hand: there is no transcript for it to trace back to. */
   manual?: boolean;
 }) {
@@ -39,18 +35,8 @@ export function Note({
 
   return (
     <div className="min-w-0">
-      {approved ? (
-        <p className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          <RiCheckDoubleLine className="size-4 shrink-0 text-primary" />
-          {approvedAt
-            ? t("Approved by {name} at {time}. It stays yours to change; edits save as you type.", {
-                name: doctor,
-                time: approvedAt,
-              })
-            : t("Approved by {name}. It stays yours to change; edits save as you type.", { name: doctor })}
-        </p>
-      ) : toCheck ? (
-        <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-warning">
+      {toCheck ? (
+        <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-warning">
           <span className="flex items-center gap-2">
             <RiErrorWarningLine className="size-4 shrink-0" />
             {toCheck === 1
@@ -66,7 +52,7 @@ export function Note({
 
       <WriteUpDocument editor={note} checks />
 
-      <p className="mt-10 flex items-center gap-2 border-t pt-4 text-xs text-muted-foreground">
+      <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground">
         <RiShieldCheckLine className="size-4 shrink-0" />
         {manual
           ? t("Written by hand. There is no recording behind this visit.")

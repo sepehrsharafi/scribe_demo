@@ -7,7 +7,7 @@ import { handoutExtensions, noteExtensions } from "@/components/write-up-extensi
 import { noteFacts, sameFacts, type NoteFacts } from "@/components/write-up-document";
 import { useVisitExtras, type WriteUpDocs } from "@/components/visit-extras";
 import { useI18n } from "@/components/i18n-provider";
-import { documentClass, numberedClass } from "@/components/write-up-editor";
+import { documentClass } from "@/components/write-up-editor";
 
 /** Pause after the last keystroke before the edit is written to the visit. */
 const settle = 600;
@@ -32,12 +32,15 @@ export function useWriteUp({
   storeKey,
   draft,
   approved: approvedOnServer,
+  emailed = false,
 }: {
   /** Where the visit's edits are kept for the session. */
   storeKey: string;
   /** The model's draft as documents. Only used when nothing has been edited yet. */
   draft: () => WriteUpDocs;
   approved: boolean;
+  /** Whether the patient has been emailed the instructions. */
+  emailed?: boolean;
 }) {
   const { t, locale } = useI18n();
   const { writeUp: stored, setWriteUp } = useVisitExtras(storeKey);
@@ -46,6 +49,7 @@ export function useWriteUp({
   const [saving, setSaving] = useState(false);
   const [approved, setApproved] = useState(approvedOnServer);
   const [edited, setEdited] = useState(Boolean(initial.editedAfterApproval));
+  const [editedSinceEmail, setEditedSinceEmail] = useState(Boolean(initial.editedAfterEmail));
   // The latest documents and the pending write. A ref, because a keystroke
   // must not re-render the visit: only the facts and the saving mark do.
   const pending = useRef<{ docs: WriteUpDocs; timer?: number; flush?: () => void }>({ docs: initial });
@@ -55,16 +59,22 @@ export function useWriteUp({
 
   function changed(which: "note" | "handout", doc: JSONContent, silent: boolean) {
     const afterApproval = approved && !silent;
+    // The letter reads its medicines off the note's table, so a change there is a change to the letter.
+    let letterChanged = which === "handout";
+    if (which === "note") {
+      const next = noteFacts(doc);
+      letterChanged = JSON.stringify(next.medications) !== JSON.stringify(facts.medications);
+      if (!sameFacts(next, facts)) setFacts(next);
+    }
+    const afterEmail = emailed && letterChanged && !silent;
     pending.current.docs = {
       ...pending.current.docs,
       [which]: doc,
       editedAfterApproval: pending.current.docs.editedAfterApproval || afterApproval,
+      editedAfterEmail: pending.current.docs.editedAfterEmail || afterEmail,
     };
-    if (which === "note") {
-      const next = noteFacts(doc);
-      if (!sameFacts(next, facts)) setFacts(next);
-    }
     if (afterApproval && !edited) setEdited(true);
+    if (afterEmail && !editedSinceEmail) setEditedSinceEmail(true);
     if (!saving) setSaving(true);
     pending.current.flush = () => setWriteUp(pending.current.docs);
     window.clearTimeout(pending.current.timer);
@@ -80,7 +90,7 @@ export function useWriteUp({
     content: initial.note,
     immediatelyRender: hydrated,
     shouldRerenderOnTransaction: false,
-    editorProps: { attributes: { class: `${documentClass} ${numberedClass}`, "aria-label": t("Note") } },
+    editorProps: { attributes: { class: documentClass, "aria-label": t("Note") } },
     onUpdate: ({ editor, transaction }) =>
       changed("note", editor.getJSON(), Boolean(transaction.getMeta(approving))),
   });
@@ -122,5 +132,13 @@ export function useWriteUp({
     setApproved(false);
   }
 
-  return { note, handout, facts, saving, approved, edited, approve, reopen };
+  /** The patient now has the letter as it stands. */
+  function emailSent() {
+    setEditedSinceEmail(false);
+    if (!pending.current.docs.editedAfterEmail) return;
+    pending.current.docs = { ...pending.current.docs, editedAfterEmail: false };
+    setWriteUp(pending.current.docs);
+  }
+
+  return { note, handout, facts, saving, approved, edited, editedSinceEmail, approve, reopen, emailSent };
 }

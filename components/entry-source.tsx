@@ -25,7 +25,7 @@ export function EntrySource({ item, className }: { item: SourcedEntry; className
       {item.source ? (
         <Link
           href={`/visits/${item.source.id}`}
-          className="font-mono tabular-nums underline-offset-4 hover:text-foreground hover:underline"
+          className="tabular-nums underline-offset-4 hover:text-foreground hover:underline"
         >
           {f.date(item.source.day, "short")} · {item.source.reason}
         </Link>

@@ -9,7 +9,7 @@ import { Elapsed, useActiveRecording } from "@/components/active-recording";
 import { PopOutButton, useRecordingWindow } from "@/components/recording-window";
 import { useI18n } from "@/components/i18n-provider";
 
-/* Four bars on the sign-in screen's wave, offset so they never move together. */
+/* Four bars of the recording wave, offset so they never move together. */
 const bars = ["0s", "-0.4s", "-0.8s", "-0.2s"];
 
 /**
@@ -46,11 +46,11 @@ export function RecordingDock() {
     >
       <section
         aria-label={t("Recording in progress")}
-        className="flex items-center gap-3 rounded-3xl bg-popover p-2.5 ps-3 text-popover-foreground shadow-xl ring-1 ring-foreground/10"
+        className="flex items-center gap-3 rounded-2xl border bg-popover p-2.5 ps-3 text-popover-foreground shadow-lg"
       >
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center gap-0.5 rounded-2xl bg-accent"
+          className="flex size-10 shrink-0 items-center justify-center gap-0.5 rounded-xl bg-accent"
         >
           {bars.map((delay) => (
             <i
@@ -66,7 +66,7 @@ export function RecordingDock() {
 
         <span className="min-w-0 flex-1">
           <strong className="block truncate text-sm font-semibold">{recording.patient.name}</strong>
-          <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground tabular-nums">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
             <span
               className={cn(
                 "size-2 shrink-0 rounded-full",

@@ -29,35 +29,22 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
-import { emptyTriage, type NoteFacts } from "@/components/write-up-document";
+import { triageAttrs, type NoteFacts } from "@/components/write-up-document";
 import { useI18n } from "@/components/i18n-provider";
 
 /*
- * How a write-up reads: the body face for prose, the heading face for
- * headings, one measure of spacing. Set once here and handed to the editor, so
- * whatever the doctor types — a new heading, a list — takes the same form as
- * the draft did.
+ * How a write-up reads: one run of text, one measure of spacing. Set once here
+ * and handed to the editor, so whatever the doctor types — a new heading, a
+ * list — takes the same form as the draft did.
  */
 export const documentClass = [
-  "min-h-48 text-base leading-relaxed text-foreground outline-none",
-  "[&_h2]:mt-8 [&_h2]:mb-2 [&_h2]:font-heading [&_h2]:text-lg [&_h2]:leading-snug [&_h2]:font-semibold [&_h2]:tracking-tight",
-  "[&_h3]:mt-6 [&_h3]:mb-1.5 [&_h3]:font-heading [&_h3]:text-base [&_h3]:font-semibold [&_h3]:tracking-tight",
-  "[&>:first-child]:mt-0 [&_p]:my-2 [&_strong]:font-semibold",
-  "[&_ol]:my-2 [&_ol]:list-describe_demol [&_ol]:ps-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:ps-6 [&_li]:my-1 [&_li]:ps-1 [&_li_p]:my-0 [&_li]:marker:text-muted-foreground",
+  "min-h-48 text-sm leading-7 text-foreground outline-none",
+  "[&_h2]:mt-10 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold",
+  "[&_h3]:mt-6 [&_h3]:mb-1 [&_h3]:text-base [&_h3]:font-semibold",
+  "[&>:first-child]:mt-0 [&>ol]:my-3 [&>p]:my-3 [&>ul]:my-3 [&_strong]:font-semibold",
+  "[&_ol]:list-describe_demol [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6 [&_li]:my-1 [&_li]:ps-1 [&_li]:marker:text-muted-foreground",
   // An empty line says what it is for.
   "[&_.is-empty]:before:pointer-events-none [&_.is-empty]:before:float-start [&_.is-empty]:before:h-0 [&_.is-empty]:before:text-muted-foreground [&_.is-empty]:before:content-[attr(data-placeholder)]",
-].join(" ");
-
-/*
- * The note's sections are ruled off and numbered in the margin, as the note
- * always was — but by CSS counters, so a heading the doctor adds, removes or
- * retitles renumbers everything after it with no code involved.
- */
-export const numberedClass = [
-  "ps-9 [counter-reset:section] sm:ps-12",
-  "[&_h2]:relative [&_h2]:border-t [&_h2]:pt-6 [&_h2]:[counter-increment:section]",
-  "[&_h2]:after:absolute [&_h2]:after:-start-9 [&_h2]:after:top-7 [&_h2]:after:font-mono [&_h2]:after:text-2xs [&_h2]:after:font-normal [&_h2]:after:tracking-normal [&_h2]:after:text-muted-foreground [&_h2]:after:tabular-nums [&_h2]:after:content-[counter(section,describe_demol-leading-zero)] sm:[&_h2]:after:-start-12",
-  "[&>h2:first-child]:border-t-0 [&>h2:first-child]:pt-0 [&>h2:first-child]:after:top-1",
 ].join(" ");
 
 /** Where the doctor looks next among the phrases still to check: after the cursor, or back at the top. */
@@ -92,12 +79,12 @@ function UncertainBubble({ editor }: { editor: Editor }) {
       pluginKey="uncertain"
       shouldShow={({ editor: current }) => current.isEditable && current.isActive("uncertain")}
       options={{ placement: "bottom-start", offset: 10 }}
-      className="z-30 grid w-80 max-w-[calc(100vw-2rem)] gap-3 rounded-2xl bg-popover p-3.5 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+      className="z-30 grid w-80 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border bg-popover p-3.5 text-popover-foreground shadow-lg"
     >
       <p className="flex gap-2.5 text-xs leading-relaxed">
         <RiQuestionLine className="mt-0.5 size-4 shrink-0 text-warning" />
         <span>
-          <span className="block font-semibold">{t("Scribe was not sure of this")}</span>
+          <span className="block font-medium">{t("Scribe was not sure of this")}</span>
           <span className="text-muted-foreground">{reason}</span>
         </span>
       </p>
@@ -205,22 +192,17 @@ export function EditorToolbar({
           : [{ label: "Medication table", icon: RiTableLine, content: { type: "medications", attrs: { rows: [] } } }]),
         ...(facts.hasTriage
           ? []
-          : [
-              { label: "Triage and vitals", icon: RiPulseLine, content: { type: "triage", attrs: { ...emptyTriage } } },
-            ]),
+          : [{ label: "Triage and vitals", icon: RiPulseLine, content: { type: "triage", attrs: triageAttrs(t) } }]),
       ]
     : [];
 
-  const tool = "size-8 min-w-8 rounded-lg px-0 aria-pressed:bg-accent aria-pressed:text-accent-foreground";
-
   return (
     // The buttons scroll sideways where the row is short of room; whether it is saved never scrolls away.
-    <div role="toolbar" aria-label={t("Formatting")} className="flex min-w-0 items-center gap-2">
-      <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
+    <div role="toolbar" aria-label={t("Formatting")} className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border bg-background p-0.5 shadow-xs [scrollbar-width:none]">
         <Button
           variant="ghost"
           size="icon-sm"
-          className="rounded-lg"
           disabled={!state?.undo}
           onClick={() => run((chain) => chain.undo())}
           aria-label={t("Undo")}
@@ -231,7 +213,6 @@ export function EditorToolbar({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="rounded-lg"
           disabled={!state?.redo}
           onClick={() => run((chain) => chain.redo())}
           aria-label={t("Redo")}
@@ -244,7 +225,7 @@ export function EditorToolbar({
           <Toggle
             key={key}
             size="sm"
-            className={tool}
+            className="px-0"
             pressed={Boolean(state?.[key])}
             onPressedChange={toggle}
             disabled={!editor}
@@ -259,7 +240,7 @@ export function EditorToolbar({
           <Toggle
             key={key}
             size="sm"
-            className={tool}
+            className="px-0"
             pressed={Boolean(state?.[key])}
             onPressedChange={toggle}
             disabled={!editor}
@@ -273,9 +254,7 @@ export function EditorToolbar({
           <>
             <Separator orientation="vertical" className="mx-1 h-5" />
             <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" size="sm" className="rounded-lg px-2" disabled={!editor} />}
-              >
+              <DropdownMenuTrigger render={<Button variant="ghost" size="sm" disabled={!editor} />}>
                 <RiAddLine data-icon="inline-start" />
                 <span className="max-sm:sr-only">{t("Insert")}</span>
               </DropdownMenuTrigger>

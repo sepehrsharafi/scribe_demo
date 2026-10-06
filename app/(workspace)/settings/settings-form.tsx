@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  RiFileTextLine,
-  RiMicLine,
-  RiShieldCheckLine,
-  RiUserLine,
-} from "@remixicon/react";
+import { RiShieldCheckLine } from "@remixicon/react";
 import { useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { resetWorkspace } from "@/lib/actions/workspace";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Field,
   FieldContent,
@@ -31,26 +26,14 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eyebrow } from "@/components/page-layout";
 import { cn, formatDuration } from "@/lib/utils";
 import { useI18n } from "@/components/i18n-provider";
 
-/*
- * Beside the sections on a desktop, the tabs are a vertical list. On a phone
- * that list would push every section below the fold, so it turns into the
- * strip the visit uses: one scrolling row, the open tab underlined. The
- * shadcn tabs style themselves by orientation, hence the overrides.
- */
-const phoneStrip =
-  "max-md:-mx-6 max-md:w-auto max-md:flex-row! max-md:justify-start max-md:gap-5 max-md:overflow-x-auto max-md:border-b max-md:px-6 max-md:[scrollbar-width:none]";
-const phoneTab =
-  "max-md:w-auto! max-md:flex-none max-md:px-0.5! max-md:py-3! max-md:after:inset-x-0! max-md:after:top-auto! max-md:after:-bottom-px! max-md:after:h-0.5! max-md:after:w-auto!";
-
 const tabs = [
-  { id: "profile", label: "Profile", icon: RiUserLine },
-  { id: "recording", label: "Recording", icon: RiMicLine },
-  { id: "notes", label: "Note review", icon: RiFileTextLine },
-  { id: "privacy", label: "Privacy", icon: RiShieldCheckLine },
+  { id: "profile", label: "Profile" },
+  { id: "recording", label: "Recording" },
+  { id: "notes", label: "Note review" },
+  { id: "privacy", label: "Privacy" },
 ];
 
 type Status = "clean" | "dirty" | "saved" | "cleared";
@@ -99,16 +82,14 @@ function SwitchField({
   );
 }
 
-/** Every tab is the same card: a numbered head, a body, and the save bar. */
+/** Every tab is the same card: a head, a body, and the save bar. */
 function Pane({
-  index,
   title,
   description,
   status,
   onSave,
   children,
 }: {
-  index: number;
   title: string;
   description: string;
   status: Status;
@@ -120,11 +101,8 @@ function Pane({
   return (
     <Card>
       <CardHeader className="border-b">
-        <Eyebrow>
-          {String(index + 1).padStart(2, "0")} / {String(tabs.length).padStart(2, "0")}
-        </Eyebrow>
-        <CardTitle className="text-xl">{t(title)}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t(description)}</p>
+        <CardTitle>{t(title)}</CardTitle>
+        <CardDescription>{t(description)}</CardDescription>
       </CardHeader>
       <CardContent>{children}</CardContent>
       <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
@@ -154,7 +132,7 @@ function ResetDemo() {
   const [resetting, startReset] = useTransition();
 
   return (
-    <Field orientation="horizontal" className="rounded-2xl border p-4">
+    <Field orientation="horizontal" className="rounded-xl border p-4">
       <FieldContent>
         <FieldTitle>{t("Changes made in this browser")}</FieldTitle>
         <FieldDescription>
@@ -200,11 +178,10 @@ export function SettingsForm({
   }
 
   return (
-    <Tabs defaultValue="profile" orientation="vertical" className="gap-8 max-md:flex-col max-md:gap-6">
-      <TabsList variant="line" className={cn("md:w-52 md:shrink-0", phoneStrip)}>
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <TabsTrigger key={id} value={id} className={phoneTab}>
-            <Icon data-icon="inline-start" />
+    <Tabs defaultValue="profile" className="gap-6">
+      <TabsList variant="line" className="h-11 w-full justify-start gap-6 overflow-x-auto border-b [scrollbar-width:none]">
+        {tabs.map(({ id, label }) => (
+          <TabsTrigger key={id} value={id}>
             {t(label)}
           </TabsTrigger>
         ))}
@@ -212,11 +189,10 @@ export function SettingsForm({
 
       <TabsContent value="profile">
         <Pane
-          index={0}
           status={status}
           onSave={save}
           title="Profile"
-          description="The identity that appears on notes approved in this demo workspace."
+          description="Your name and details in this demo workspace."
         >
           <div className="grid gap-5 sm:grid-cols-2">
             {[
@@ -244,7 +220,6 @@ export function SettingsForm({
 
       <TabsContent value="recording">
         <Pane
-          index={1}
           status={status}
           onSave={save}
           title="Recording"
@@ -297,7 +272,6 @@ export function SettingsForm({
 
       <TabsContent value="notes">
         <Pane
-          index={2}
           status={status}
           onSave={save}
           title="Note review"
@@ -350,7 +324,6 @@ export function SettingsForm({
 
       <TabsContent value="privacy">
         <Pane
-          index={3}
           status={status}
           onSave={save}
           title="Privacy and recovery"
@@ -376,7 +349,7 @@ export function SettingsForm({
               label="Anonymous product analytics"
               description="Share non-clinical interaction data to improve the demo experience."
             />
-            <Field orientation="horizontal" className="rounded-2xl border p-4">
+            <Field orientation="horizontal" className="rounded-xl border p-4">
               <FieldContent>
                 <FieldTitle>{t("Recovered demo audio")}</FieldTitle>
                 <FieldDescription>

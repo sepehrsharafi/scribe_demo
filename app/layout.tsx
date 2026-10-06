@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Raleway, Figtree, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -8,13 +8,17 @@ import { getI18n } from "@/lib/i18n/server";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/components/i18n-provider";
-import { ViewTransitionErrors } from "@/components/view-transition-errors";
 
-const raleway = Raleway({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-heading" });
-
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
+/* The Arabic demo's one face. Its Latin cut is loaded too, for the digits and
+   the few Latin abbreviations, which stay as they are. */
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
+  preload: false,
+});
 
 /* The Farsi demo's one face, in its Farsi-digit cut: every numeral on the page
    is drawn in Persian without the data having to change. */
@@ -46,18 +50,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={locale}
       dir={dir}
-      data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn(
-        "h-full scroll-smooth antialiased",
-        raleway.variable,
-        figtree.variable,
-        geistMono.variable,
-        vazirmatn.variable,
-      )}
+      className={cn("h-full", inter.variable, vazirmatn.variable, plexArabic.variable)}
     >
       <body>
-        <ViewTransitionErrors />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <I18nProvider locale={locale}>
             <TooltipProvider>{children}</TooltipProvider>

@@ -33,18 +33,25 @@ const utc = (iso: string) => {
 
 /* English is spelled out by hand so the server and every browser print the
    same characters — ICU versions disagree on "Sep" and "Sept". Farsi uses the
-   Persian calendar, which only Intl knows; digits stay ASCII because the Farsi
-   font draws them as Persian numerals. */
-const persian = (options: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat("fa-IR-u-nu-latn", { ...options, timeZone: "UTC" });
-
-const fa = {
-  date: persian({ day: "numeric", month: "long", year: "numeric" }),
-  month: persian({ month: "long", year: "numeric" }),
-  weekday: persian({ weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+   Persian calendar and Arabic the Gregorian one, which only Intl knows the
+   names of; digits stay ASCII in both, and the Farsi font draws them as
+   Persian numerals. */
+const intl = (tag: string) => {
+  const format = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat(tag, { ...options, timeZone: "UTC" });
+  return {
+    date: format({ day: "numeric", month: "long", year: "numeric" }),
+    month: format({ month: "long", year: "numeric" }),
+    weekday: format({ weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+  };
 };
 
-const daysBetween = (from: string, to: string) =>
+const formats = { fa: intl("fa-IR-u-nu-latn"), ar: intl("ar-u-ca-gregory-nu-latn") };
+
+/** This device's clock, HH:MM: how approvals and emails are stamped. */
+export const clockTime = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+const daysBetween =(from: string, to: string) =>
   Math.round((utc(to).getTime() - utc(from).getTime()) / 86_400_000);
 
 export type Format = ReturnType<typeof formatter>;
@@ -55,7 +62,7 @@ export function formatter(locale: Locale) {
 
   /** 14 May 1988, or 22 Sep 2026 with a short month. */
   function date(iso: string, month: "long" | "short" = "long") {
-    if (locale === "fa") return fa.date.format(utc(iso));
+    if (locale !== "en") return formats[locale].date.format(utc(iso));
     const at = utc(iso);
     const name = months[at.getUTCMonth()];
     return `${at.getUTCDate()} ${month === "short" ? name.slice(0, 3) : name} ${at.getUTCFullYear()}`;
@@ -74,13 +81,13 @@ export function formatter(locale: Locale) {
 
     /** Tuesday · 22 September 2026 */
     longDay(iso: string) {
-      if (locale === "fa") return fa.weekday.format(utc(iso));
+      if (locale !== "en") return formats[locale].weekday.format(utc(iso));
       return `${weekdays[utc(iso).getUTCDay()]} · ${date(iso)}`;
     },
 
     /** March 2021 */
     month(iso: string) {
-      if (locale === "fa") return fa.month.format(utc(iso));
+      if (locale !== "en") return formats[locale].month.format(utc(iso));
       const at = utc(iso);
       return `${months[at.getUTCMonth()]} ${at.getUTCFullYear()}`;
     },
@@ -101,8 +108,8 @@ export function formatter(locale: Locale) {
         .split(/\s+/)
         .map((word) => word[0])
         .slice(0, 2)
-        // Persian letters would join into a word; a zero-width non-joiner keeps them apart.
-        .join(locale === "fa" ? "‌" : "")
+        // Persian and Arabic letters would join into a word; a zero-width non-joiner keeps them apart.
+        .join(locale === "en" ? "" : "‌")
         .toUpperCase();
     },
   };

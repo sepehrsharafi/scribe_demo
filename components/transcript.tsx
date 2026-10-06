@@ -2,12 +2,12 @@ import type { Speaker, TranscriptLine } from "@/lib/demo-data";
 import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-/* The doctor's words carry the most weight; everyone else in the room is set
-   a step quieter, and a third voice gets a rule of its own so it is never
-   mistaken for the patient. */
+/* The doctor is set in the accent, the patient in plain text, and a third
+   voice a step quieter with a rule of its own, so it is never mistaken for
+   either. */
 const speakerTone: Record<Speaker, string> = {
-  Doctor: "text-foreground",
-  Patient: "text-muted-foreground",
+  Doctor: "text-primary",
+  Patient: "text-foreground",
   Companion: "text-muted-foreground",
 };
 
@@ -28,7 +28,7 @@ export async function Transcript({ lines, length }: { lines: TranscriptLine[]; l
   }));
 
   return (
-    <div className="grid min-w-0 gap-6">
+    <div className="grid min-w-0 gap-8">
       <dl className="flex flex-wrap gap-x-10 gap-y-3">
         {[
           { label: t("Length"), value: length },
@@ -38,33 +38,26 @@ export async function Transcript({ lines, length }: { lines: TranscriptLine[]; l
           })),
         ].map((fact) => (
           <div key={fact.label}>
-            <dt className="font-mono text-2xs tracking-[0.14em] text-muted-foreground uppercase">{fact.label}</dt>
-            <dd className="mt-1 font-mono text-sm tabular-nums">{fact.value}</dd>
+            <dt className="text-xs text-muted-foreground">{fact.label}</dt>
+            <dd className="text-sm font-medium tabular-nums">{fact.value}</dd>
           </div>
         ))}
       </dl>
 
-      <ol className="divide-y border-y">
+      <ol className="grid gap-6">
         {lines.map((line) => (
           <li
             key={`${line.time}-${line.speaker}`}
             className={cn(
-              "grid gap-1 py-4 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4",
-              line.speaker === "Companion" && "border-s-2 border-s-primary/40 ps-4 sm:ps-4",
+              "grid gap-1 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4",
+              line.speaker === "Companion" && "border-s-2 border-s-primary/40 ps-4",
             )}
           >
             <div className="flex items-baseline gap-3 sm:block">
-              <span
-                className={cn(
-                  "font-mono text-2xs font-semibold tracking-[0.12em] uppercase",
-                  speakerTone[line.speaker],
-                )}
-              >
-                {t(line.speaker)}
-              </span>
-              <time className="block font-mono text-2xs text-muted-foreground tabular-nums sm:mt-1">{line.time}</time>
+              <span className={cn("text-xs font-medium", speakerTone[line.speaker])}>{t(line.speaker)}</span>
+              <time className="block text-xs text-muted-foreground tabular-nums">{line.time}</time>
             </div>
-            <p className="leading-relaxed">{line.text}</p>
+            <p className="text-sm leading-7">{line.text}</p>
           </li>
         ))}
       </ol>

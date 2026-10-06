@@ -1,7 +1,7 @@
-// Demo-only: the Farsi interface exists for demonstrations, not for the
-// product that ships. Everything language-related lives under lib/i18n.
+// Demo-only: the Farsi and Arabic interfaces exist for demonstrations, not for
+// the product that ships. Everything language-related lives under lib/i18n.
 
-export const locales = ["en", "fa"] as const;
+export const locales = ["en", "fa", "ar"] as const;
 
 export type Locale = (typeof locales)[number];
 
@@ -9,9 +9,9 @@ export type Locale = (typeof locales)[number];
 export const localeCookie = "scribe-locale";
 
 export function toLocale(value: string | undefined): Locale {
-  return value === "fa" ? "fa" : "en";
+  return locales.find((locale) => locale === value) ?? "en";
 }
 
 export function direction(locale: Locale) {
-  return locale === "fa" ? "rtl" : "ltr";
+  return locale === "en" ? "ltr" : "rtl";
 }

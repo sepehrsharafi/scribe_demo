@@ -1,7 +1,12 @@
 "use client";
 
-import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, use, useEffect, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { saveRecording } from "@/lib/actions/workspace";
 import { formatDuration } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
+import { useVisitExtrasHandover } from "@/components/visit-extras";
 
 /**
  * A visit being recorded. It lives above the pages, in the workspace layout,
@@ -27,14 +32,24 @@ export function elapsedSeconds(recording: LiveRecording, now: number) {
   return Math.floor((recording.banked + running) / 1000);
 }
 
+/** HH:MM, some seconds ago. */
+const clockAt = (secondsAgo: number) =>
+  new Date(Date.now() - secondsAgo * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
 type Controls = {
   recording: LiveRecording | null;
+  /** A recording just finished, while it is saved and its visit opens. */
+  filed: LiveRecording | null;
+  /** The open microphone, for drawing its level; null when refused or missing. */
+  microphone: MediaStream | null;
   /** `recovered` is seconds restored from a session the browser lost. */
   start: (patient: LiveRecording["patient"], recovered?: number) => void;
   pause: () => void;
   resume: () => void;
-  /** Ends it: saved, or thrown away. */
-  clear: () => void;
+  /** Files it as a visit, with whatever was attached to it, and opens that visit. */
+  finish: () => void;
+  /** Throws it away, with whatever was attached to it. */
+  discard: () => void;
 };
 
 const RecordingContext = createContext<Controls | null>(null);
@@ -43,7 +58,8 @@ const RecordingContext = createContext<Controls | null>(null);
  * The microphone, opened for as long as a recording exists. Nothing is kept
  * from it — the demo has no audio pipeline — but a page that is really
  * listening is what lets the browser show the recording indicator on the tab
- * and float the recording in its own window when the doctor switches away.
+ * and float the recording in its own window when the doctor switches away,
+ * and its level is what the floating window draws.
  * If the microphone is refused or missing, the recording carries on without it.
  */
 function useMicrophone(recording: LiveRecording | null) {
@@ -74,15 +90,32 @@ function useMicrophone(recording: LiveRecording | null) {
   useEffect(() => {
     stream?.getAudioTracks().forEach((track) => (track.enabled = listening));
   }, [stream, listening]);
+
+  return stream;
 }
 
+/**
+ * The recording, and the only way to change it. Finishing and discarding live
+ * here rather than on the visit's page because the floating window does both
+ * too, wherever in the app the doctor happens to be.
+ */
 export function ActiveRecordingProvider({ children }: { children: ReactNode }) {
   const [recording, setRecording] = useState<LiveRecording | null>(null);
+  // Finished, and on its way to the server: kept until the app has moved on
+  // to the visit, so the screen it was finished on never flashes back to Start.
+  const [filed, setFiled] = useState<{ recording: LiveRecording; from: string } | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const handover = useVisitExtrasHandover();
+  const { t } = useI18n();
+  const microphone = useMicrophone(recording);
 
-  useMicrophone(recording);
+  if (filed && filed.from !== pathname) setFiled(null);
 
   const controls: Controls = {
     recording,
+    filed: filed?.recording ?? null,
+    microphone,
     start: (patient, recovered = 0) =>
       setRecording({ patient, phase: "recording", banked: recovered * 1000, since: Date.now() }),
     pause: () => {
@@ -104,7 +137,34 @@ export function ActiveRecordingProvider({ children }: { children: ReactNode }) {
         current?.phase === "paused" ? { ...current, phase: "recording", since: now } : current,
       );
     },
-    clear: () => setRecording(null),
+    finish: () => {
+      if (!recording) return;
+      const now = Date.now();
+      const seconds = elapsedSeconds(recording, now);
+      const id = `r${now.toString(36)}`;
+      setFiled({ recording: { ...recording, phase: "paused", banked: seconds * 1000, since: null }, from: pathname });
+      // Cleared at once, so neither the corner card nor the floating window outlives it.
+      setRecording(null);
+      // Whatever was attached while recording follows the visit to its new address.
+      handover.move(`new:${recording.patient.id}`, id);
+      // The server answers by redirecting to the visit, and the router goes
+      // there by itself; the promise only rejects to say so.
+      saveRecording({
+        id,
+        patientId: recording.patient.id,
+        seconds,
+        time: clockAt(seconds),
+        stoppedAt: now,
+      }).catch(() => {});
+    },
+    discard: () => {
+      if (!recording) return;
+      setRecording(null);
+      handover.clear(`new:${recording.patient.id}`);
+      toast(t("Recording discarded"));
+      // Thrown away from the visit, there is nothing left on it to look at.
+      if (window.location.pathname.startsWith("/new")) router.push("/");
+    },
   };
 
   return <RecordingContext value={controls}>{children}</RecordingContext>;
@@ -122,14 +182,23 @@ export function useActiveRecording() {
  */
 export function Elapsed({ recording, className }: { recording: LiveRecording; className?: string }) {
   const [now, setNow] = useState(() => Date.now());
+  const readout = useRef<HTMLSpanElement>(null);
   const running = recording.since !== null;
 
   useEffect(() => {
     if (!running) return;
+    // The window the readout is drawn in keeps its time. A floating window
+    // stays visible while this tab is hidden, and a hidden tab's timers are
+    // slowed to as little as once a minute; the floating window's are not.
+    const view = readout.current?.ownerDocument.defaultView ?? window;
     // Twice a second, so the display never skips a second when a tick lands late.
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(timer);
+    const timer = view.setInterval(() => setNow(Date.now()), 500);
+    return () => view.clearInterval(timer);
   }, [running]);
 
-  return <span className={className}>{formatDuration(elapsedSeconds(recording, now))}</span>;
+  return (
+    <span ref={readout} className={className}>
+      {formatDuration(elapsedSeconds(recording, now))}
+    </span>
+  );
 }

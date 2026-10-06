@@ -1,7 +1,11 @@
 // What this browser has done to the demo since it opened it: visits recorded,
-// patients added, notes approved, uploads retried. It is a cookie rather than
-// client state so that every server-rendered surface — the sidebar, Home, the
-// patient record — reads the same workspace as the page that changed it.
+// patients added, notes approved, uploads retried, visits retyped, instructions
+// emailed. It is a
+// cookie rather than client state so that every server-rendered surface — the
+// sidebar, Home, the patient record — reads the same workspace as the page
+// that changed it.
+
+import type { VisitType } from "@/lib/demo-data";
 
 export const workspaceCookie = "scribe-workspace";
 
@@ -31,9 +35,23 @@ export type WorkspaceChanges = {
   approved: Record<string, string>;
   /** Visit id → when a failed upload was retried, in epoch ms. */
   retried: Record<string, number>;
+  /** Visit id → the type the doctor chose, which outranks Scribe's. */
+  types: Record<string, VisitType>;
+  /** Visit id → where its instructions were last emailed, and the local clock time, HH:MM. */
+  emailed: Record<string, { to: string; time: string }>;
+  /** Patient id → an address the doctor typed when emailing; it replaces the one on file. */
+  addresses: Record<string, string>;
 };
 
-export const noChanges: WorkspaceChanges = { recorded: [], patients: [], approved: {}, retried: {} };
+export const noChanges: WorkspaceChanges = {
+  recorded: [],
+  patients: [],
+  approved: {},
+  retried: {},
+  types: {},
+  emailed: {},
+  addresses: {},
+};
 
 const list = <T,>(value: unknown) => (Array.isArray(value) ? (value as T[]) : []);
 const map = <T,>(value: unknown) =>
@@ -48,6 +66,9 @@ export function parseChanges(raw: string | undefined): WorkspaceChanges {
       patients: list(value.patients),
       approved: map(value.approved),
       retried: map(value.retried),
+      types: map(value.types),
+      emailed: map(value.emailed),
+      addresses: map(value.addresses),
     };
   } catch {
     return noChanges;

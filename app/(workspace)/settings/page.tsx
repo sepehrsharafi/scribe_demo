@@ -6,9 +6,8 @@ export default async function Settings() {
   const { t, demo } = await getI18n();
 
   return (
-    <Page className="space-y-8">
+    <Page className="max-w-3xl space-y-8">
       <PageHead
-        eyebrow={t("Workspace")}
         title={t("Settings")}
         description={t("Your demo profile, capture behaviour, and note review preferences.")}
       />

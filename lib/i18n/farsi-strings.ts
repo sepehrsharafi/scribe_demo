@@ -6,14 +6,12 @@ export const farsiStrings: Record<string, string> = {
   // Chrome
   Scribe: "اسکرایب",
   "Scribe home": "صفحهٔ اصلی اسکرایب",
-  "Clinical notes": "یادداشت‌های بالینی",
-  Workspace: "فضای کار",
   Home: "خانه",
   Visits: "ویزیت‌ها",
   Patients: "بیماران",
   Help: "راهنما",
   Settings: "تنظیمات",
-  "Demo workspace": "فضای کار نمایشی",
+  "Dark mode": "حالت تاریک",
 
   // Home
   "A recording was recovered": "یک ضبط بازیابی شد",
@@ -31,7 +29,6 @@ export const farsiStrings: Record<string, string> = {
   Yesterday: "دیروز",
 
   // Patients
-  Records: "پرونده‌ها",
   "Search patient names": "جست‌وجوی نام بیماران",
   "{shown} of {total}": "{shown} از {total}",
   "Date of birth": "تاریخ تولد",
@@ -39,7 +36,6 @@ export const farsiStrings: Record<string, string> = {
   "No visits": "بدون ویزیت",
   "No matching patients": "بیماری پیدا نشد",
   "Search by the name recorded on the patient record.": "با نامی که در پروندهٔ بیمار ثبت شده جست‌وجو کنید.",
-  "Patient record": "پروندهٔ بیمار",
   "Registered {when}": "ثبت‌نام {when}",
   "Needs you": "منتظر شما",
   None: "هیچ",
@@ -90,10 +86,8 @@ export const farsiStrings: Record<string, string> = {
   Assessment: "ارزیابی",
 
   // Help
-  Support: "پشتیبانی",
   "How can we help?": "چطور می‌توانیم کمک کنیم؟",
   "Common questions": "پرسش‌های رایج",
-  "{count} answers": "{count} پاسخ",
   "What happens if the browser closes during a visit?": "اگر مرورگر در حین ویزیت بسته شود چه می‌شود؟",
   "Audio is written to local storage in encrypted chunks as it is captured, not held whole in memory. When you return, Scribe offers to recover the recording and carry on from where it stopped.":
     "صدا هم‌زمان با ضبط در قطعه‌های رمزگذاری‌شده روی حافظهٔ محلی نوشته می‌شود، نه یکجا در حافظهٔ موقت. وقتی بازگردید، اسکرایب پیشنهاد می‌کند ضبط را بازیابی کند و از همان‌جا ادامه دهد.",
@@ -161,17 +155,12 @@ export const farsiStrings: Record<string, string> = {
   "Clear demo data": "پاک کردن داده‌های نمایشی",
 
   // Sign in
-  "Listen.": "بشنو.",
-  "Draft.": "بنویس.",
-  "The consultation is captured in encrypted chunks as you talk.":
-    "ویزیت هم‌زمان با صحبت شما، در قطعه‌های رمزگذاری‌شده ضبط می‌شود.",
-  "A structured note, drawn only from what was said.": "یادداشتی ساختاریافته، فقط بر پایهٔ آنچه گفته شد.",
-  "You read it, correct it, and put your name to it.": "شما می‌خوانید، اصلاح می‌کنید و تأییدش می‌کنید.",
   "Demo workspace · synthetic patients only": "فضای کار نمایشی · فقط بیماران ساختگی",
-  "Step {current} of {total}": "مرحلهٔ {current} از {total}",
-  "Sign in to Scribe": "ورود به اسکرایب",
-  "No password. We email you a one-time code each time you sign in.":
-    "بدون رمز عبور. هر بار که وارد می‌شوید، یک کد یک‌بارمصرف برایتان ایمیل می‌کنیم.",
+  "Sign in": "ورود",
+  "Your notes, written while you listen.": "یادداشت‌های شما، همزمان با گوش دادن نوشته می‌شوند.",
+  "Welcome back": "خوش برگشتید",
+  "Sign in with your work email. We'll send you a one-time code.":
+    "با ایمیل کاری‌تان وارد شوید. یک کد یک‌بارمصرف برایتان می‌فرستیم.",
   "Work email": "ایمیل کاری",
   "Enter a valid email address.": "یک نشانی ایمیل معتبر وارد کنید.",
   "Send code": "ارسال کد",
@@ -186,7 +175,6 @@ export const farsiStrings: Record<string, string> = {
   "Resend code": "ارسال دوبارهٔ کد",
   "Demo workspace: no email is sent. Any six digits will sign you in.":
     "فضای کار نمایشی: ایمیلی ارسال نمی‌شود. هر شش رقمی شما را وارد می‌کند.",
-  "One-time codes · no passwords stored": "کد یک‌بارمصرف · هیچ رمزی ذخیره نمی‌شود",
   "Sign out": "خروج",
 
   // Not found
@@ -195,15 +183,14 @@ export const farsiStrings: Record<string, string> = {
   "Back to today": "بازگشت به امروز",
 
   // Approval, structured notes, patient context and history
-  "Approve.": "تأیید کن.",
   "Approve note": "تأیید یادداشت",
   "Confirm 1 medication to approve": "برای تأیید یادداشت، 1 دارو را تأیید کنید",
   "Confirm {count} medications to approve": "برای تأیید یادداشت، {count} دارو را تأیید کنید",
   "Approved notes": "یادداشت‌های تأییدشده",
   "Review and approve": "بازبینی و تأیید",
   "Can an approved note be changed?": "آیا یادداشت تأییدشده قابل تغییر است؟",
-  "The identity that appears on notes approved in this demo workspace.":
-    "هویتی که روی یادداشت‌های تأییدشده در این فضای کار نمایشی می‌آید.",
+  "Your name and details in this demo workspace.":
+    "نام و مشخصات شما در این فضای کار نمایشی.",
   "Examination & vitals": "معاینه و علائم حیاتی",
   "Tests & referrals": "آزمایش‌ها و ارجاع‌ها",
   "Advice & follow-up": "توصیه‌ها و پیگیری",
@@ -215,7 +202,7 @@ export const farsiStrings: Record<string, string> = {
   Temp: "دما",
   "SpO₂": "اکسیژن خون",
   Weight: "وزن",
-  mmHg: "میلی‌متر جیوه",
+  mmHg: "mmHg",
   bpm: "در دقیقه",
   "°C": "°C",
   "%": "%",
@@ -252,6 +239,7 @@ export const farsiStrings: Record<string, string> = {
   Saving: "در حال ذخیره",
   Discard: "دور انداختن",
   "Discard this recording?": "این ضبط دور انداخته شود؟",
+  "Discard?": "دور انداخته شود؟",
   "Changes made in this browser": "تغییرات این مرورگر",
   "New recordings, added patients and approvals. Resetting brings back the demo as it started.":
     "ضبط‌های جدید، بیماران افزوده‌شده و تأییدها. بازنشانی، نسخهٔ نمایشی را به حالت آغاز برمی‌گرداند.",
@@ -277,11 +265,15 @@ export const farsiStrings: Record<string, string> = {
   "Nothing is waiting. Every note is approved.": "کاری در انتظار نیست. همهٔ یادداشت‌ها تأیید شده‌اند.",
   "Who is this visit with?": "این ویزیت با چه کسی است؟",
   "Pick a patient, and the visit opens ready to record.": "بیمار را انتخاب کنید تا ویزیت آمادهٔ ضبط باز شود.",
-  "Who is it with? Pick a patient, and the visit opens ready to record.": "با چه کسی است؟ بیمار را انتخاب کنید تا ویزیت آمادهٔ ضبط باز شود.",
   "Find a patient": "یافتن بیمار",
   "Matching patients": "بیماران یافته‌شده",
   "Recent patients": "بیماران اخیر",
   "First visit": "اولین ویزیت",
+  "Follow-up": "پیگیری",
+  "New complaint": "شکایت جدید",
+  "Results review": "بررسی نتایج آزمایش",
+  "Treatment check": "کنترل درمان",
+  "Visit type": "نوع ویزیت",
   "Nobody called “{name}” yet.": "هنوز کسی به نام «{name}» ثبت نشده است.",
   "Add “{name}” as a new patient": "افزودن «{name}» به‌عنوان بیمار جدید",
   "Only a name and a date of birth.": "فقط نام و تاریخ تولد.",
@@ -321,6 +313,8 @@ export const farsiStrings: Record<string, string> = {
   "From the record": "از پرونده",
   "Drop files here, or choose them": "فایل‌ها را اینجا رها کنید یا انتخاب کنید",
   "Scans, letters and results — images or PDFs, up to 25 MB each.": "تصویربرداری، نامه و جواب آزمایش — تصویر یا PDF، هر کدام حداکثر 25 مگابایت.",
+  "You can also paste an image.": "می‌توانید یک تصویر را هم جایگذاری کنید.",
+  "Pasted image {time}": "تصویر جایگذاری‌شده {time}",
   "Only images and PDFs up to 25 MB can be attached.": "فقط تصویر و PDF تا 25 مگابایت پیوست می‌شود.",
   "Remove {name}": "حذف {name}",
   "{n} KB": "{n} کیلوبایت",
@@ -373,14 +367,11 @@ export const farsiStrings: Record<string, string> = {
   "Seconds. The visit shows each step as it happens — securing the audio, transcribing, writing the note, writing the instructions — and you can leave the page and come back without losing anything.": "چند ثانیه. ویزیت هر مرحله را همان‌طور که پیش می‌رود نشان می‌دهد — امن کردن صدا، رونویسی، نوشتن یادداشت، نوشتن دستورها — و می‌توانید بی‌آنکه چیزی از دست برود از صفحه بروید و برگردید.",
   // Rich-text write-up, the brief, the day to scale, toasts and the recording window (30 Sep 2026)
   "Clear the search": "پاک کردن جست‌وجو",
-  "{count} to review": "{count} برای بازبینی",
   min: "دقیقه",
   "{signed} of {count} signed off": "{signed} از {count} تأیید شده",
   "From the record and 1 earlier note": "از پرونده و 1 یادداشت قبلی",
   "From the record and {count} earlier notes": "از پرونده و {count} یادداشت قبلی",
   "Show me": "نشانم بده",
-  "Approved by {name} at {time}. It stays yours to change; edits save as you type.": "ساعت {time} توسط {name} تأیید شد. همچنان می‌توانید تغییرش دهید؛ ویرایش‌ها همان‌طور که می‌نویسید ذخیره می‌شوند.",
-  "Approved by {name}. It stays yours to change; edits save as you type.": "توسط {name} تأیید شد. همچنان می‌توانید تغییرش دهید؛ ویرایش‌ها همان‌طور که می‌نویسید ذخیره می‌شوند.",
   "Signs off the note and the instructions together.": "یادداشت و دستورها را با هم تأیید می‌کند.",
   "Approve changes": "تأیید تغییرات",
   "Changes approved": "تغییرات تأیید شد",
@@ -405,6 +396,9 @@ export const farsiStrings: Record<string, string> = {
   "Numbered list": "فهرست شماره‌دار",
   "Medication table": "جدول داروها",
   "Triage and vitals": "تریاژ و علائم حیاتی",
+  "Add vital": "افزودن علامت حیاتی",
+  Vital: "علامت حیاتی",
+  Unit: "واحد",
   "Write here…": "اینجا بنویسید…",
   "Note ready": "یادداشت آماده است",
   "The note and the instructions are written. Read them through, then approve.": "یادداشت و دستورها نوشته شده‌اند. آن‌ها را بخوانید، سپس تأیید کنید.",
@@ -421,7 +415,13 @@ export const farsiStrings: Record<string, string> = {
   "In Chrome and Edge, pressing Start floats the recording in a small window that stays on top of other tabs and apps, with pause and the way back. Close it and the recording waits in the corner of Scribe instead; Pop out brings the window back. Elsewhere it carries on in the corner of Scribe.": "در کروم و اج، با زدن «شروع» ضبط در پنجرهٔ کوچکی شناور می‌شود که روی زبانه‌ها و برنامه‌های دیگر می‌ماند، با دکمهٔ توقف و راه بازگشت. اگر آن را ببندید، ضبط در گوشهٔ اسکرایب منتظر می‌ماند و «پنجرهٔ شناور» دوباره بازش می‌کند. در مرورگرهای دیگر در گوشهٔ اسکرایب ادامه پیدا می‌کند.",
   "Signed off. Still editable; a later change is flagged until it is approved.": "امضا شده. همچنان قابل ویرایش؛ تغییر بعدی تا تأیید شدن علامت می‌خورد.",
 
-  // Home: the writing given back, and the patient search
+  // Home: the greeting and the writing given back
+  "Good morning, {name}": "صبح بخیر، {name}",
+  "Good afternoon, {name}": "بعدازظهر بخیر، {name}",
+  "Good evening, {name}": "عصر بخیر، {name}",
+  "Time given back": "زمان بازگردانده‌شده",
+  "This week": "این هفته",
+  "Since you started": "از زمان شروع شما",
   "{minutes} min": "{minutes} دقیقه",
   "{hours} h {minutes} min": "{hours} ساعت و {minutes} دقیقه",
   "of writing up, done for you today": "نوشتنی که امروز به جای شما انجام شد",
@@ -446,4 +446,27 @@ export const farsiStrings: Record<string, string> = {
   "Patient context": "زمینهٔ بیمار",
   "As it stands for the next visit": "آن‌طور که برای ویزیت بعدی هست",
   "Recording. It stays on top in its own window, wherever you go.": "در حال ضبط. هر جا بروید، در پنجرهٔ خودش روی همه می‌ماند.",
+
+  // Emailing the instructions
+  "Email to patient": "ایمیل به بیمار",
+  "Send again": "ارسال دوباره",
+  "Approve the visit to email these instructions.": "برای ایمیل کردن این دستورها، ویزیت را تأیید کنید.",
+  "Approve the changes to email these instructions.": "برای ایمیل کردن این دستورها، تغییرها را تأیید کنید.",
+  "Emailed to": "ایمیل شد به",
+  "Changed since it was emailed": "پس از ایمیل تغییر کرده است",
+  Emailed: "ایمیل شد",
+  "Instructions emailed": "دستورها ایمیل شد",
+  "Instructions emailed to {email}": "دستورها به {email} ایمیل شد",
+  "Email instructions to {name}": "ایمیل دستورها به {name}",
+  "The letter goes as it reads now. Emails cannot be unsent.": "نامه همان‌طور که اکنون هست فرستاده می‌شود. ایمیل فرستاده‌شده را نمی‌توان پس گرفت.",
+  To: "به",
+  "{name} has no email address on file. The one you enter is kept for next time.": "{name} نشانی ایمیلی در پرونده ندارد. نشانی‌ای که وارد می‌کنید برای دفعهٔ بعد نگه داشته می‌شود.",
+  "Replaces {email} on file, for next time.": "برای دفعهٔ بعد، جای {email} را در پرونده می‌گیرد.",
+  Subject: "موضوع",
+  "Your visit on {date} — instructions from {doctor}": "ویزیت شما در {date} — دستورهای {doctor}",
+  "Demo workspace: no email is actually sent.": "فضای کار نمایشی: در واقع هیچ ایمیلی فرستاده نمی‌شود.",
+  "That did not go through. Try again.": "ارسال نشد. دوباره امتحان کنید.",
+  Cancel: "انصراف",
+  Send: "ارسال",
+  "Sending…": "در حال ارسال…",
 };

@@ -31,7 +31,7 @@ export async function ContextPanel({
       planDay={day}
       aside={
         <section aria-labelledby="visit-files" className="grid content-start gap-3">
-          <h3 id="visit-files" className="border-b pb-3 font-heading text-base font-semibold tracking-tight">
+          <h3 id="visit-files" className="text-base font-semibold">
             {t("Files")}
           </h3>
           <VisitFiles extrasKey={extrasKey} seed={seed.files ?? []} />

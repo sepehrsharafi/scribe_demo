@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { ClinicalEntry, Patient, Visit } from "@/lib/demo-data";
+import { RiMailCheckLine } from "@remixicon/react";
+import { visitTypeLabels, type ClinicalEntry, type Patient, type Visit } from "@/lib/demo-data";
 import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { SectionHead } from "@/components/page-layout";
@@ -32,13 +33,13 @@ function Change({
   return (
     <li
       className={cn(
-        "inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border px-3 py-1.5 text-xs",
+        "inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-1.5 text-xs",
         entry.kind === "allergy" && "border-destructive/30 bg-destructive/5 text-destructive",
         pending && "border-dashed",
         quiet && "text-muted-foreground",
       )}
     >
-      <span className="font-mono text-2xs tracking-[0.12em] uppercase opacity-80">{verb}</span>
+      <span className="opacity-80">{verb}</span>
       <span className={cn(quiet ? "line-through decoration-1" : "font-medium")}>{entry.text}</span>
     </li>
   );
@@ -51,7 +52,7 @@ function Change({
  * once per visit.
  */
 export async function VisitHistory({ patient, visits }: { patient: Patient; visits: Visit[] }) {
-  const { t, f } = await getI18n();
+  const { t, f, demo } = await getI18n();
   const began = (visitId?: string) =>
     patient.record.filter((entry) => entry.visitId === visitId);
   const ended = (visitId: string) => patient.record.filter((entry) => entry.endedVisitId === visitId);
@@ -79,14 +80,25 @@ export async function VisitHistory({ patient, visits }: { patient: Patient; visi
                 )}
               />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <time className="font-mono text-xs text-muted-foreground tabular-nums">
+                <time className="text-xs text-muted-foreground tabular-nums">
                   {f.date(visit.day, "short")} · {visit.time}
                 </time>
                 <StatusBadge status={visit.status} />
+                {visit.emailed ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <RiMailCheckLine className="size-4 shrink-0" aria-hidden="true" />
+                    {t("Instructions emailed")}
+                  </span>
+                ) : null}
               </div>
-              <Link href={`/visits/${visit.id}`} className="mt-1 inline-block font-medium underline-offset-4 hover:underline">
-                {visit.reason || t("New visit")}
-              </Link>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                <Link href={`/visits/${visit.id}`} className="font-medium underline-offset-4 hover:underline">
+                  {visit.reason || t("New visit")}
+                </Link>
+                {visit.reason ? (
+                  <span className="text-xs text-muted-foreground">{t(visitTypeLabels[demo.getVisitType(visit)])}</span>
+                ) : null}
+              </div>
               {added.length || taken.length ? (
                 <>
                   <ul className="mt-3 flex flex-wrap gap-2">
@@ -115,7 +127,7 @@ export async function VisitHistory({ patient, visits }: { patient: Patient; visi
               aria-hidden="true"
               className="absolute top-1.5 -start-[calc(1.5rem+0.3125rem)] size-2.5 rounded-full bg-muted-foreground ring-4 ring-background"
             />
-            <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            <span className="text-xs text-muted-foreground tabular-nums">
               {t("Registered {when}", { when: f.month(patient.registered) })}
             </span>
             <p className="mt-1 font-medium">{t("Registration record")}</p>

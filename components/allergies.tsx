@@ -16,7 +16,7 @@ export async function Allergies({ patientId, visitId }: { patientId: string; vis
         allergies.map(({ entry }) => (
           <span
             key={entry.id}
-            className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive dark:bg-destructive/20"
+            className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-2xs font-medium text-destructive dark:bg-destructive/20"
           >
             <RiAlarmWarningLine className="size-3.5 shrink-0" aria-hidden="true" />
             <span className="sr-only">{t("Allergy")}:</span>
@@ -24,7 +24,7 @@ export async function Allergies({ patientId, visitId }: { patientId: string; vis
           </span>
         ))
       ) : (
-        <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">
           {t("No allergies recorded")}
         </span>
       )}

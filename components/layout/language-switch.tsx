@@ -5,15 +5,22 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useI18n } from "@/components/i18n-provider";
 import { localeCookie, type Locale } from "@/lib/i18n/locales";
 
-const options: { locale: Locale; label: string; name: string }[] = [
+export const languages: { locale: Locale; label: string; name: string; className?: string }[] = [
   { locale: "en", label: "EN", name: "English" },
-  { locale: "fa", label: "فا", name: "فارسی" },
+  // Each name is drawn in its own face even while English is showing.
+  { locale: "fa", label: "فا", name: "فارسی", className: "font-(family-name:--font-farsi)" },
+  { locale: "ar", label: "ع", name: "العربية", className: "font-(family-name:--font-arabic)" },
 ];
 
 /**
  * Demo-only. The choice goes in a cookie so the server renders the next page in
  * it, and the page reloads so nothing already on screen keeps the old language.
  */
+export function chooseLanguage(locale: Locale) {
+  document.cookie = `${localeCookie}=${locale}; path=/; max-age=31536000; samesite=lax`;
+  window.location.reload();
+}
+
 export function LanguageSwitch() {
   const { locale } = useI18n();
 
@@ -25,25 +32,19 @@ export function LanguageSwitch() {
       spacing={0}
       value={[locale]}
       onValueChange={(next) => {
-        const chosen = next[0];
-        if (!chosen || chosen === locale) return;
-        document.cookie = `${localeCookie}=${chosen}; path=/; max-age=31536000; samesite=lax`;
-        window.location.reload();
+        const chosen = languages.find((language) => language.locale === next[0]);
+        if (chosen && chosen.locale !== locale) chooseLanguage(chosen.locale);
       }}
     >
-      {options.map((option) => (
+      {languages.map((language) => (
         <ToggleGroupItem
-          key={option.locale}
-          value={option.locale}
-          aria-label={option.name}
-          lang={option.locale}
-          // The Farsi label is drawn in the Farsi face even while English is showing.
-          className={cn(
-            "px-2.5 text-xs",
-            option.locale === "fa" ? "font-(family-name:--font-farsi)" : "font-mono",
-          )}
+          key={language.locale}
+          value={language.locale}
+          aria-label={language.name}
+          lang={language.locale}
+          className={cn("px-2.5 text-xs", language.className)}
         >
-          {option.label}
+          {language.label}
         </ToggleGroupItem>
       ))}
     </ToggleGroup>

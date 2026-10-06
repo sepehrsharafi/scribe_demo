@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { RiArrowRightSLine } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 /*
- * Every record list is one ruled table. The caller passes the same grid template
- * to `RecordHead` and every `RecordRow`, which is what keeps the columns in a
- * straight line no matter how long a status word happens to be.
+ * Every record list is one bordered table. The caller passes the same grid
+ * template to `RecordHead` and every `RecordRow`, which is what keeps the
+ * columns in a straight line no matter how long a status word happens to be.
  */
 
 export function RecordList({
@@ -16,7 +17,7 @@ export function RecordList({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-2xl border", className)}>{children}</div>
+    <div className={cn("overflow-hidden rounded-xl border", className)}>{children}</div>
   );
 }
 
@@ -28,12 +29,7 @@ export function RecordHead({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "border-b bg-muted/40 px-4 py-2.5 font-mono text-2xs tracking-[0.12em] text-muted-foreground uppercase",
-        className,
-      )}
-    >
+    <div className={cn("border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground", className)}>
       {children}
     </div>
   );
@@ -51,10 +47,7 @@ export function RecordRow({
   return (
     <Link
       href={href}
-      className={cn(
-        "group/row border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/50",
-        className,
-      )}
+      className={cn("border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted", className)}
     >
       {children}
     </Link>
@@ -68,7 +61,6 @@ export function Cell({
   secondaryClassName,
   className,
   align = "start",
-  mono,
 }: {
   primary: ReactNode;
   secondary?: ReactNode;
@@ -76,7 +68,6 @@ export function Cell({
   secondaryClassName?: string;
   className?: string;
   align?: "start" | "end";
-  mono?: boolean;
 }) {
   return (
     <span
@@ -86,13 +77,7 @@ export function Cell({
         className,
       )}
     >
-      <span
-        className={cn(
-          "w-full truncate text-sm font-medium",
-          align === "end" && "text-end",
-          mono && "font-mono tabular-nums",
-        )}
-      >
+      <span className={cn("w-full truncate text-sm font-medium", align === "end" && "text-end")}>
         {primary}
       </span>
       {secondary ? (
@@ -100,7 +85,6 @@ export function Cell({
           className={cn(
             "w-full truncate text-xs text-muted-foreground",
             align === "end" && "text-end",
-            mono && "font-mono tabular-nums",
             secondaryClassName,
           )}
         >
@@ -111,27 +95,6 @@ export function Cell({
   );
 }
 
-export function RowIndex({ index }: { index: number }) {
-  return (
-    <span className="hidden font-mono text-2xs text-muted-foreground tabular-nums sm:block">
-      {String(index + 1).padStart(2, "0")}
-    </span>
-  );
-}
-
 export function RowChevron() {
-  return (
-    <span className="hidden justify-self-end text-muted-foreground transition-transform group-hover/row:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover/row:-translate-x-0.5 sm:block">
-      <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
-        <path
-          d="m9 6 6 6-6 6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
+  return <RiArrowRightSLine className="hidden size-5 justify-self-end text-muted-foreground rtl:-scale-x-100 sm:block" />;
 }

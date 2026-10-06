@@ -90,7 +90,7 @@ export function noteDocument(note: NoteRecord, t: Translate, manual = false): JS
       content.push({ type: "medications", attrs: { rows: note.medications } });
       continue;
     }
-    if (id === "examination" && note.triage) content.push({ type: "triage", attrs: { ...note.triage } });
+    if (id === "examination" && note.triage) content.push({ type: "triage", attrs: triageAttrs(t, note.triage) });
     const section = note.sections.find((item) => item.id === id);
     content.push(...blocks(section?.body ?? "", section?.uncertain));
     // Only an examination can be an explicit gap: the one thing a note must never invent.
@@ -206,4 +206,23 @@ export function withoutUncertain(doc: JSONContent): JSONContent {
   };
 }
 
-export const emptyTriage: Triage = { complaint: "", bp: "", hr: "", temp: "", spo2: "", weight: "" };
+/** One reading in a triage block. What is measured is the doctor's to rename, add to or take out. */
+export type Vital = { label: string; value: string; unit: string };
+
+export type TriageAttrs = { complaint: string; vitals: Vital[] };
+
+const emptyTriage: Triage = { complaint: "", bp: "", hr: "", temp: "", spo2: "", weight: "" };
+
+const vitalFields: { field: Exclude<keyof Triage, "complaint">; label: string; unit: string }[] = [
+  { field: "bp", label: "BP", unit: "mmHg" },
+  { field: "hr", label: "HR", unit: "bpm" },
+  { field: "temp", label: "Temp", unit: "°C" },
+  { field: "spo2", label: "SpO₂", unit: "%" },
+  { field: "weight", label: "Weight", unit: "kg" },
+];
+
+/** A triage block's attributes: what triage recorded, or the usual vitals left blank. */
+export const triageAttrs = (t: Translate, triage: Triage = emptyTriage): TriageAttrs => ({
+  complaint: triage.complaint,
+  vitals: vitalFields.map(({ field, label, unit }) => ({ label: t(label), value: triage[field], unit: t(unit) })),
+});

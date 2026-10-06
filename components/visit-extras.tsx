@@ -4,8 +4,17 @@ import { createContext, use, useState, type ReactNode } from "react";
 import type { JSONContent } from "@tiptap/core";
 import type { Attachment } from "@/lib/demo-data";
 
-/** The note and the instructions as the doctor last left them, and whether they changed after approval. */
-export type WriteUpDocs = { note: JSONContent; handout: JSONContent; editedAfterApproval?: boolean };
+/**
+ * The note and the instructions as the doctor last left them, whether they
+ * changed after approval, and whether the patient's letter changed after it
+ * was emailed.
+ */
+export type WriteUpDocs = {
+  note: JSONContent;
+  handout: JSONContent;
+  editedAfterApproval?: boolean;
+  editedAfterEmail?: boolean;
+};
 
 /** What the doctor did to one visit in this session: files attached, and edits to the write-up. */
 type Extras = { files: Attachment[]; writeUp?: WriteUpDocs };

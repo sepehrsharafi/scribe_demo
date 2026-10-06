@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { sessionCookie } from "@/lib/session";
+import { visitTypes, type VisitType } from "@/lib/demo-data";
+import { isValidEmail, sessionCookie } from "@/lib/session";
 import { parseChanges, workspaceCookie, type WorkspaceChanges } from "@/lib/workspace";
 
 /** Reads this browser's changes, applies one more, and writes them back. */
@@ -83,6 +84,39 @@ export async function reopenNote(visitId: string) {
     delete approved[visitId];
     return { ...changes, approved };
   });
+}
+
+/** The doctor's own call on what kind of visit this was; it outranks Scribe's. */
+export async function setVisitType(visitId: string, type: VisitType) {
+  if (!visitTypes.includes(type)) throw new Error("Not a visit type");
+  await change((changes) => ({ ...changes, types: { ...changes.types, [visitId]: type } }));
+}
+
+const id = /^[a-z][a-z0-9]{0,20}$/;
+
+/**
+ * Emails the patient their instructions — in the demo, nothing leaves the
+ * browser; the visit only records where they went and when. An address the
+ * doctor typed in for the patient (`rememberFor`) replaces the one on file,
+ * so the next send starts from it.
+ */
+export async function emailInstructions(input: {
+  visitId: string;
+  to: string;
+  /** Local clock time it was sent, HH:MM. */
+  time: string;
+  rememberFor?: string;
+}) {
+  const to = input.to.trim();
+  if (!id.test(input.visitId) || !isValidEmail(to) || to.length > 120) throw new Error("Not an email address");
+  await change((changes) => ({
+    ...changes,
+    emailed: { ...changes.emailed, [input.visitId]: { to, time: clock(input.time) } },
+    addresses:
+      input.rememberFor && id.test(input.rememberFor)
+        ? { ...changes.addresses, [input.rememberFor]: to }
+        : changes.addresses,
+  }));
 }
 
 /** Puts the demo back as it shipped, ready for the next walkthrough. */

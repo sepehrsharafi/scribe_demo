@@ -5,11 +5,16 @@ import { usePathname } from "next/navigation";
 import { RiCloseLine, RiSearchLine } from "@remixicon/react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { VisitStatus } from "@/lib/demo-data";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { SidebarGroup } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
+import { cn, typing } from "@/lib/utils";
 import { statusText } from "@/components/status-text";
 import { useI18n } from "@/components/i18n-provider";
 
@@ -18,6 +23,8 @@ export type VisitRow = {
   id: string;
   patient: string;
   reason: string;
+  /** The visit type, in the current language. Only searched, never drawn. */
+  type: string;
   /** Today, Yesterday, or the date: the heading it is listed under. */
   day: string;
   time: string;
@@ -25,11 +32,6 @@ export type VisitRow = {
 };
 
 const searchId = "visit-search";
-
-/** Keys typed into a field are the field's, not a shortcut. */
-function typing(target: EventTarget | null) {
-  return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
-}
 
 /**
  * Where a visit stands, said only when it needs saying: a note waiting for
@@ -65,7 +67,7 @@ function Standing({ status }: { status: VisitStatus }) {
 /** Marks the row the doctor just clicked while its visit is still on its way. */
 function Pending() {
   const { pending } = useLinkStatus();
-  return <span aria-hidden="true" data-pending={pending ? "" : undefined} className="hidden" />;
+  return <span hidden data-pending={pending ? "" : undefined} />;
 }
 
 /** The part of a name or reason that matched, picked out. */
@@ -89,10 +91,9 @@ function byDay(rows: VisitRow[]) {
 }
 
 /**
- * The visits, latest first, each day ruled off with its count and how many
- * are waiting for review. A row is who the visit was with, then what it was
- * about and when, quieter. A search line sits on top — press / from anywhere
- * to use it.
+ * The visits, latest first, each day ruled off by a pill. A row is who the
+ * visit was with, then when and what it was about, quieter. A search field sits
+ * on top — press / from anywhere to use it.
  */
 export function VisitList({ rows }: { rows: VisitRow[] }) {
   const { t } = useI18n();
@@ -101,7 +102,7 @@ export function VisitList({ rows }: { rows: VisitRow[] }) {
 
   const search = query.trim().toLocaleLowerCase();
   const shown = search
-    ? rows.filter((row) => `${row.patient} ${row.reason}`.toLocaleLowerCase().includes(search))
+    ? rows.filter((row) => `${row.patient} ${row.reason} ${row.type}`.toLocaleLowerCase().includes(search))
     : rows;
 
   useEffect(() => {
@@ -117,13 +118,12 @@ export function VisitList({ rows }: { rows: VisitRow[] }) {
   }, []);
 
   return (
-    <SidebarGroup className="min-h-0 flex-1 gap-2 pt-3">
-      <div className="group/search relative flex items-center">
-        <RiSearchLine
-          aria-hidden="true"
-          className="pointer-events-none absolute start-2.5 size-4 text-muted-foreground transition-colors group-focus-within/search:text-primary"
-        />
-        <Input
+    <SidebarGroup className="min-h-0 flex-1 gap-2">
+      <InputGroup>
+        <InputGroupAddon>
+          <RiSearchLine />
+        </InputGroupAddon>
+        <InputGroupInput
           id={searchId}
           type="search"
           value={query}
@@ -136,43 +136,37 @@ export function VisitList({ rows }: { rows: VisitRow[] }) {
           placeholder={t("Search visits")}
           aria-label={t("Search visits")}
           autoComplete="off"
-          className="h-9 rounded-none border-0 border-b border-sidebar-border bg-transparent ps-8 pe-14 text-sm shadow-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-transparent [&::-webkit-search-cancel-button]:hidden"
+          className="[&::-webkit-search-cancel-button]:hidden"
         />
-        <span className="absolute end-1.5 flex items-center gap-1">
+        <InputGroupAddon align="inline-end">
           {query ? (
             <>
-              <span className="font-mono text-2xs text-muted-foreground tabular-nums" aria-live="polite">
+              <span className="text-2xs tabular-nums" aria-live="polite">
                 {shown.length}
               </span>
-              <button
-                type="button"
+              <InputGroupButton
+                size="icon-xs"
                 onClick={() => setQuery("")}
                 aria-label={t("Clear the search")}
                 title={t("Clear the search")}
-                className="flex size-6 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
-                <RiCloseLine className="size-4" />
-              </button>
+                <RiCloseLine />
+              </InputGroupButton>
             </>
           ) : (
-            <Kbd className="bg-transparent font-mono text-2xs group-focus-within/search:hidden">/</Kbd>
+            <Kbd className="group-focus-within/input-group:hidden">/</Kbd>
           )}
-        </span>
-      </div>
+        </InputGroupAddon>
+      </InputGroup>
 
       <nav aria-label={t("Visits")} className="-mx-2 min-h-0 flex-1 overflow-y-auto px-2 pb-2 [scrollbar-width:thin]">
         {shown.length ? (
           byDay(shown).map(([day, visits]) => (
-            <section key={day} className="pt-3 first:pt-1">
-              <h3 className="sticky top-0 z-20 flex items-center gap-2 bg-sidebar py-1.5 ps-1 font-mono text-2xs tracking-[0.14em] text-muted-foreground uppercase">
-                <span>{day}</span>
-                <span aria-hidden="true" className="h-px flex-1 bg-sidebar-border" />
-                {visits.some((row) => row.status === "ready") ? (
-                  <span className="text-warning tabular-nums">
-                    {t("{count} to review", { count: visits.filter((row) => row.status === "ready").length })}
-                  </span>
-                ) : null}
-                <span className="tabular-nums">{visits.length}</span>
+            <section key={day}>
+              <h3 className="sticky top-0 z-20 flex items-center gap-2 bg-sidebar py-2">
+                <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                <span className="rounded-full border bg-background px-2.5 text-xs font-medium">{day}</span>
+                <span aria-hidden="true" className="h-px flex-1 bg-border" />
               </h3>
               <ul>
                 {visits.map((row) => {
@@ -184,22 +178,20 @@ export function VisitList({ rows }: { rows: VisitRow[] }) {
                         aria-current={active ? "page" : undefined}
                         title={row.status === "approved" ? undefined : t(statusText[row.status].description)}
                         className={cn(
-                          "grid gap-0.5 rounded-lg px-2 py-2 outline-none transition-colors",
-                          "hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-sidebar-ring has-data-pending:bg-sidebar-accent/60",
-                          active && "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent",
+                          "grid gap-0.5 rounded-lg px-3 py-2 outline-none transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-sidebar-ring has-data-pending:bg-sidebar-accent/50",
+                          active && "bg-sidebar-accent hover:bg-sidebar-accent",
                         )}
                       >
                         <span className="flex min-w-0 items-center justify-between gap-2">
-                          <span className="truncate text-sm font-semibold">
+                          <span className="truncate text-sm font-medium">
                             <Matched text={row.patient} query={search} />
                           </span>
                           <Standing status={row.status} />
                         </span>
-                        <span className="flex min-w-0 items-baseline justify-between gap-3 text-xs text-muted-foreground">
-                          <span className="truncate">
-                            <Matched text={row.reason || t("New visit")} query={search} />
-                          </span>
-                          <time className="shrink-0 font-mono text-2xs tabular-nums">{row.time}</time>
+                        <span className="truncate text-xs text-muted-foreground">
+                          <time className="tabular-nums">{row.time}</time>
+                          {" · "}
+                          <Matched text={row.reason || t("New visit")} query={search} />
                         </span>
                         <Pending />
                       </Link>

@@ -1,12 +1,13 @@
 "use client";
 
-import { RiCheckDoubleLine, RiErrorWarningLine } from "@remixicon/react";
+import { RiCheckDoubleLine, RiErrorWarningLine, RiMailCheckLine } from "@remixicon/react";
 import { useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { Note as NoteRecord, VisitStatus } from "@/lib/demo-data";
+import type { EmailedInstructions, Note as NoteRecord, VisitStatus } from "@/lib/demo-data";
 import { approveNote, reopenNote, retryUpload } from "@/lib/actions/workspace";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { clockTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { InstructionsSheet } from "@/components/instructions-sheet";
 import { jumpTo, Note } from "@/components/note";
@@ -27,10 +28,15 @@ export type VisitSummary = {
   since?: number;
   failure?: string;
   approvedAt?: string;
+  /** When the patient was last emailed the instructions. */
+  emailed?: EmailedInstructions;
   /** False for a visit written by hand: no audio, no transcript. */
   recorded: boolean;
+  patientId: string;
   patientName: string;
   firstName: string;
+  /** The patient's email address on file, if any. */
+  patientEmail?: string;
   /** The visit's date, as the patient's instructions are dated. */
   date: string;
   /** Files the practice attached before the visit. */
@@ -52,7 +58,7 @@ function Count({ value, tone = "muted" }: { value: number; tone?: "muted" | "war
   return (
     <span
       className={cn(
-        "flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-2xs font-semibold tabular-nums",
+        "flex h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-2xs font-medium tabular-nums",
         tone === "warning" ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground",
       )}
     >
@@ -60,8 +66,6 @@ function Count({ value, tone = "muted" }: { value: number; tone?: "muted" | "war
     </span>
   );
 }
-
-const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 /** A visit whose note is written: read it, correct it, approve it. */
 function WrittenVisit({
@@ -79,6 +83,7 @@ function WrittenVisit({
   const writeUp = useWriteUp({
     storeKey: visit.id,
     approved: visit.status === "approved",
+    emailed: Boolean(visit.emailed),
     draft: () => ({
       note: noteDocument(draft, t, !visit.recorded),
       handout: handoutDocument({
@@ -95,7 +100,7 @@ function WrittenVisit({
   const toCheck = writeUp.approved ? 0 : facts.unconfirmed + facts.uncertain;
 
   function approve() {
-    const time = clock();
+    const time = clockTime();
     const again = writeUp.approved;
     writeUp.approve();
     startTransition(() => approveNote(visit.id, time));
@@ -114,24 +119,38 @@ function WrittenVisit({
 
   const actions = writeUp.approved ? (
     <>
-      <span className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex h-10 items-center gap-2 rounded-full bg-primary/10 px-4 text-sm font-medium text-primary dark:bg-primary/20">
-          <RiCheckDoubleLine className="size-4" />
-          {visit.approvedAt ? t("Approved at {time}", { time: visit.approvedAt }) : t("Approved")}
-        </span>
-        {writeUp.edited ? (
-          <Button variant="outline" size="lg" onClick={approve} disabled={facts.unconfirmed > 0}>
-            {t("Approve changes")}
-          </Button>
-        ) : null}
+      <span
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary"
+        title={writeUp.edited ? t("Changed since it was approved.") : t("Still editable — changes save as you type.")}
+      >
+        <RiCheckDoubleLine className="size-4" />
+        {visit.approvedAt ? t("Approved at {time}", { time: visit.approvedAt }) : t("Approved")}
       </span>
-      <span className="text-xs text-muted-foreground">
-        {writeUp.edited ? t("Changed since it was approved.") : t("Still editable — changes save as you type.")}
-      </span>
+      {visit.emailed ? (
+        <button
+          type="button"
+          onClick={() => onTab("instructions")}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          title={t("Instructions emailed to {email}", { email: `⁨${visit.emailed.to}⁩` })}
+        >
+          <RiMailCheckLine className="size-4" aria-hidden="true" />
+          {t("Emailed")}
+        </button>
+      ) : null}
+      {writeUp.edited ? (
+        <Button variant="outline" size="lg" onClick={approve} disabled={facts.unconfirmed > 0}>
+          {t("Approve changes")}
+        </Button>
+      ) : null}
     </>
   ) : (
-    <>
-      <Button size="lg" onClick={approve} disabled={facts.unconfirmed > 0}>
+    <span className="flex flex-col items-start gap-1.5 @xl:items-end">
+      <Button
+        size="lg"
+        onClick={approve}
+        disabled={facts.unconfirmed > 0}
+        title={t("Signs off the note and the instructions together.")}
+      >
         <RiCheckDoubleLine data-icon="inline-start" />
         {t("Approve")}
       </Button>
@@ -149,10 +168,8 @@ function WrittenVisit({
             ? t("Confirm 1 medication to approve")
             : t("Confirm {count} medications to approve", { count: facts.unconfirmed })}
         </button>
-      ) : (
-        <span className="text-xs text-muted-foreground">{t("Signs off the note and the instructions together.")}</span>
-      )}
-    </>
+      ) : null}
+    </span>
   );
 
   return (
@@ -164,6 +181,9 @@ function WrittenVisit({
         marks={{
           context: visit.seededFiles + files.length ? <Count value={visit.seededFiles + files.length} /> : null,
           note: toCheck ? <Count value={toCheck} tone="warning" /> : null,
+          instructions: visit.emailed ? (
+            <RiMailCheckLine className="size-4 text-muted-foreground" role="img" aria-label={t("Emailed")} />
+          ) : null,
         }}
         tools={
           tab === "note" ? (
@@ -175,8 +195,22 @@ function WrittenVisit({
         panels={{
           context,
           transcript,
-          note: <Note writeUp={writeUp} doctor={doctor} approvedAt={visit.approvedAt} manual={!visit.recorded} />,
-          instructions: <InstructionsSheet writeUp={writeUp} patientName={visit.patientName} date={visit.date} />,
+          note: <Note writeUp={writeUp} manual={!visit.recorded} />,
+          instructions: (
+            <InstructionsSheet
+              writeUp={writeUp}
+              patientName={visit.patientName}
+              date={visit.date}
+              email={{
+                visitId: visit.id,
+                patientId: visit.patientId,
+                firstName: visit.firstName,
+                address: visit.patientEmail,
+                sent: visit.emailed,
+                doctor,
+              }}
+            />
+          ),
         }}
       />
     </VisitFrame>
@@ -198,7 +232,7 @@ function PendingVisit({ visit, now, identity, context, tab, onTab }: Parts) {
   );
 
   return (
-    <VisitFrame identity={identity} actions={<StatusBadge status={visit.status} className="h-8 px-3 text-sm" />}>
+    <VisitFrame identity={identity} actions={<StatusBadge status={visit.status} />}>
       <VisitTabs
         value={tab}
         onValueChange={onTab}
